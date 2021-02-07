@@ -1,7 +1,6 @@
 all: Iperfer
 
 Iperfer: Iperfer.java
-	clear
 	javac Iperfer.java
 	
 run-client: Iperfer
@@ -11,4 +10,4 @@ run-server: Iperfer
 	java Iperfer -s -p 8080
 	
 clean:
-	rm -rf Iperfer
+	rm -rf *.class

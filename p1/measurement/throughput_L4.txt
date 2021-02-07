@@ -1,0 +1,2 @@
+sent=70285 KB rate=26.743 Mbps
+received=70284 KB rate=23.858 Mbps

@@ -1,0 +1,44 @@
+Q2.
+The expected latency and throughput is 160ms and 20Mbps.
+
+The average RTT is 161.539ms and measured throughput is 18.609 Mbps
+
+The total latency from h1 to h4 should be sum of latency of L1, L2, L3, which is
+80 + 20 + 60 = 160ms. The throughput cannot exceed the minimum throughput of L1,
+L2, L3, which is 20Mbps.
+
+Q3.
+For two pairs, the expected latency is still 160ms, but the expected throughput
+of each pair should roughly be 10Mbps(half of 20Mbps).
+For three pairs, the expected latency is still 160ms, but the throughput of eac
+pair should roughly be 6.67Mbps(one-third of 20Mbps).
+
+For two pairs, the average RTT is 161.580 and 161.328ms, and measured
+throughput is 12.037 and 6.876 Mbps.
+For three pairs, the average RTT is 161.347, 162.418, and 161.525ms, and the
+measured throughput is 10.991, 4.923, and 3.804Mbps.
+
+The latency is still the same because even though there are more than one pair
+of hosts using the same link path at the same time, none of the factors of
+latency (propagation, transmit, queue) changes significantly. The queuing time
+does not change significantly because the ping command waits one seconds betwee
+sending each package.
+
+The bandwith are not shared equally between those pairs of hosts could be a
+result of not being able to start all the clients at the same time (need time to
+switch between xterm windows and hit enter to run the clients).
+
+Q4.
+For h1-h4 and h5-h6, the expected latency is 160 and 40ms, and the expected
+throughput is 15~20 and 25~20Mbps.
+
+For h1-h4 and h5-h6, the average RTT is 161.414 and 41.341ms, and the measured
+throughput is 15.434 and 22.255 Mbps respectively.
+
+The latency does not change for the same reason mentioned in Q3. The throughput 
+is 15~20 and 25~20Mbps, bacause:
+case 1: h1-h4 have a throughput of 20Mbps, links on h5-h6 have 25, 20, 25Mbps
+bandwith, so the h5-h6 can have a throughput of 20Mbps.
+case 2: Links on h5-h6 have 25, 40, 25Mbps bandwith, so h5-h6 have a throughput
+of 25Mbps. Links on h1-h4 have 20, 15, 30Mbps bandwidth, so h1-h4 can have a
+throughput of 15Mbps.
