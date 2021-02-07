@@ -86,7 +86,7 @@ public class Iperfer {
 			System.out.println("Error: cannot connect to client");
 			System.exit(1);
 		}
-		System.out.printf("sent=%o KB rate=%.3f Mbps\n", p.getKb(), p.getRate());
+		System.out.printf("received=%o KB rate=%.3f Mbps\n", p.getKb(), p.getRate());
 	}
 }
 
