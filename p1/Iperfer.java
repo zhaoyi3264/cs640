@@ -55,7 +55,7 @@ public class Iperfer {
 			while (System.currentTimeMillis() < end) {
 				out.write(buffer);
 				out.flush();
-				p.increment();
+				p.increment(1.0);
 			}
 			p.end();
 			out.close();
@@ -64,34 +64,36 @@ public class Iperfer {
 			System.out.println("Error: cannot connect to server");
 			System.exit(1);
 		}
-		System.out.printf("sent=%o KB rate=%.3f Mbps\n", p.getKb(), p.getRate());
+		System.out.printf("sent=%d KB rate=%.3f Mbps\n", (int)p.getKb(), p.getRate());
 	}
 
 	public static void server(int port) {
 		byte[] buffer = new byte[1000];
+		double len = 0.0;
 		Perf p = new Perf();
-		ServerSocket socket = null;
+		ServerSocket server = null;
 		try {
-			socket = new ServerSocket(port);
-			Socket client = socket.accept();
+			server = new ServerSocket(port);
+			Socket client = server.accept();
 			InputStream in = client.getInputStream();
 			p.start();
-			while (in.read(buffer, 0, 1000) != -1) {
-				p.increment();
+			while ((len = in.read(buffer, 0, 1000)) != -1) {
+				p.increment(len / 1000.0);
 			}
 			p.end();
 			in.close();
-			socket.close();
+			client.close();
+			server.close();
 		} catch (Exception e) {
 			System.out.println("Error: cannot connect to client");
 			System.exit(1);
 		}
-		System.out.printf("received=%o KB rate=%.3f Mbps\n", p.getKb(), p.getRate());
+		System.out.printf("received=%d KB rate=%.3f Mbps\n", (int)p.getKb(), p.getRate());
 	}
 }
 
 class Perf {
-	private long kb = 0;
+	private double kb = 0.0;
 	private double rate = 0.0;
 	private long t0 = 0;
 	private long t1 = 0;
@@ -104,11 +106,11 @@ class Perf {
 		this.t1 = System.currentTimeMillis();
 	}
 	
-	public void increment() {
-		this.kb++;
+	public void increment(double d) {
+		this.kb += d;
 	}
 	
-	public long getKb() {
+	public double getKb() {
 		return this.kb;
 	}
 	
