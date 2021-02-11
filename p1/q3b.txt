@@ -1,0 +1,81 @@
+PING 10.0.0.4 (10.0.0.4) 56(84) bytes of data.
+64 bytes from 10.0.0.4: icmp_seq=1 ttl=64 time=173 ms
+PING 10.0.0.9 (10.0.0.9) 56(84) bytes of data.
+64 bytes from 10.0.0.9: icmp_seq=1 ttl=64 time=171 ms
+PING 10.0.0.10 (10.0.0.10) 56(84) bytes of data.
+64 bytes from 10.0.0.10: icmp_seq=1 ttl=64 time=183 ms
+64 bytes from 10.0.0.4: icmp_seq=2 ttl=64 time=163 ms
+64 bytes from 10.0.0.9: icmp_seq=2 ttl=64 time=172 ms
+64 bytes from 10.0.0.10: icmp_seq=2 ttl=64 time=167 ms
+64 bytes from 10.0.0.4: icmp_seq=3 ttl=64 time=161 ms
+64 bytes from 10.0.0.9: icmp_seq=3 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=3 ttl=64 time=161 ms
+64 bytes from 10.0.0.4: icmp_seq=4 ttl=64 time=161 ms
+64 bytes from 10.0.0.9: icmp_seq=4 ttl=64 time=160 ms
+64 bytes from 10.0.0.10: icmp_seq=4 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=5 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=5 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=5 ttl=64 time=161 ms
+64 bytes from 10.0.0.4: icmp_seq=6 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=6 ttl=64 time=160 ms
+64 bytes from 10.0.0.10: icmp_seq=6 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=7 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=7 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=7 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=8 ttl=64 time=161 ms
+64 bytes from 10.0.0.9: icmp_seq=8 ttl=64 time=160 ms
+64 bytes from 10.0.0.10: icmp_seq=8 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=9 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=9 ttl=64 time=160 ms
+64 bytes from 10.0.0.10: icmp_seq=9 ttl=64 time=161 ms
+64 bytes from 10.0.0.4: icmp_seq=10 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=10 ttl=64 time=160 ms
+64 bytes from 10.0.0.10: icmp_seq=10 ttl=64 time=161 ms
+64 bytes from 10.0.0.4: icmp_seq=11 ttl=64 time=161 ms
+64 bytes from 10.0.0.9: icmp_seq=11 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=11 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=12 ttl=64 time=161 ms
+64 bytes from 10.0.0.9: icmp_seq=12 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=12 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=13 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=13 ttl=64 time=160 ms
+64 bytes from 10.0.0.10: icmp_seq=13 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=14 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=14 ttl=64 time=160 ms
+64 bytes from 10.0.0.10: icmp_seq=14 ttl=64 time=161 ms
+64 bytes from 10.0.0.4: icmp_seq=15 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=15 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=15 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=16 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=16 ttl=64 time=160 ms
+64 bytes from 10.0.0.10: icmp_seq=16 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=17 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=17 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=17 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=18 ttl=64 time=160 ms
+64 bytes from 10.0.0.9: icmp_seq=18 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=18 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=19 ttl=64 time=161 ms
+64 bytes from 10.0.0.9: icmp_seq=19 ttl=64 time=161 ms
+64 bytes from 10.0.0.10: icmp_seq=19 ttl=64 time=160 ms
+64 bytes from 10.0.0.4: icmp_seq=20 ttl=64 time=160 ms
+
+--- 10.0.0.4 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 45ms
+rtt min/avg/max/mdev = 160.318/161.200/172.845/2.783 ms
+64 bytes from 10.0.0.9: icmp_seq=20 ttl=64 time=160 ms
+
+--- 10.0.0.9 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 45ms
+rtt min/avg/max/mdev = 160.334/161.598/172.304/3.321 ms
+64 bytes from 10.0.0.10: icmp_seq=20 ttl=64 time=160 ms
+
+--- 10.0.0.10 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 46ms
+rtt min/avg/max/mdev = 160.341/161.949/183.442/5.136 ms
+sent=16286 KB rate=6.437 Mbps
+sent=16690 KB rate=6.504 Mbps
+sent=30043 KB rate=11.039 Mbps
+received=16690 KB rate=5.103 Mbps
+received=16286 KB rate=4.925 Mbps
+received=30043 KB rate=8.966 Mbps
