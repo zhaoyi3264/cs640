@@ -1,5 +1,5 @@
 Q2.
-The expected latency and throughput is 160ms and 20Mbps.
+The expected latency and throughput is 160 ms and 20 Mbps.
 
 The average RTT is 161.058 ms and measured throughput is 18.546 Mbps
 
@@ -25,7 +25,8 @@ does not change significantly because the ping command waits one seconds between
 sending each package.
 
 The bandwith are not shared equally between those pairs of hosts could be a
-result of the clients are not started at exactly the same time.
+result of the clients are not started at exactly the same time, even though a
+script is used to start the server and client programs together.
 
 Q4.
 For h1-h4 and h5-h6, the expected latency is 160 and 40 ms, and the expected
@@ -40,4 +41,4 @@ case 1: h1-h4 have a throughput of 20 Mbps, links on h5-h6 have 25, 20, 25 Mbps
 bandwith, so the h5-h6 can have a throughput of 20 Mbps.
 case 2: Links on h5-h6 have 25, 40, 25 Mbps bandwith, so h5-h6 have a throughput
 of 25 Mbps. Links on h1-h4 have 20, 15, 30 Mbps bandwidth, so h1-h4 can have a
-throughput of 15Mbps.
+throughput of 15 Mbps.
