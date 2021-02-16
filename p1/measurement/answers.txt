@@ -26,7 +26,9 @@ sending each package.
 
 The bandwith are not shared equally between those pairs of hosts could be a
 result of the clients are not started at exactly the same time, even though a
-script is used to start the server and client programs together.
+script is used to start the server and client programs together. This can also
+be caused by context switch, and so some client processes get more cpu time
+to send data than others.
 
 Q4.
 For h1-h4 and h5-h6, the expected latency is 160 and 40 ms, and the expected
