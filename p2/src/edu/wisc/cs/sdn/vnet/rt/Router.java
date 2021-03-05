@@ -107,11 +107,6 @@ public class Router extends Device
 			return;
 		}
 		header.setTtl(ttl);
-		// compute new checksum
-		header.setChecksum((short)0);
-		data = header.serialize();
-		header = (IPv4) header.deserialize(data, 0, data.length);
-		etherPacket.setPayload(header);
 		// check if destination is one of the interface
 		int dstAddr = header.getDestinationAddress();
 		for (Iface iface : this.interfaces.values()) { 
@@ -131,6 +126,11 @@ public class Router extends Device
 		if (arpe == null) {
 			return;
 		}
+		// compute new checksum
+		header.setChecksum((short)0);
+		data = header.serialize();
+		header = (IPv4) header.deserialize(data, 0, data.length);
+		etherPacket.setPayload(header);
 		// update MAC address in the frame
 		String src = re.getInterface().getMacAddress().toString();
 		String dst = arpe.getMac().toString();
