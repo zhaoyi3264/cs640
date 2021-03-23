@@ -103,7 +103,7 @@ public class Router extends Device
 				while (iterator.hasNext()) {
 					Map.Entry<Integer, RipEntry> entry = iterator.next();
 					RipEntry ripEntry = entry.getValue();
-					boolean expired = System.currentTimeMillis() - ripEntry.timestamp >= 30000;
+					boolean expired = System.currentTimeMillis() - ripEntry.timeStamp >= 30000;
 					if (ripEntry.metric != 0 && expired) {
 						System.out.println("Removing expired entry...");
 						System.out.println("\tdest:" +  IPv4.fromIPv4Address(ripEntry.addr));
@@ -234,7 +234,7 @@ public class Router extends Device
 						+ "\n\tdest: " + IPv4.fromIPv4Address(subnetAddr)
 						+ "\n\tnextHop: " + IPv4.fromIPv4Address(nextHop)
 						+ "\n\tmetric: " + metric);
-					ripEntry.timestamp = System.currentTimeMillis();
+					ripEntry.timeStamp = System.currentTimeMillis();
 				}
 				if (metric >= Router.MAX_DIST) {
 					System.out.println("Soft deleting RIP entry..."
@@ -394,14 +394,14 @@ class RipEntry {
 	int mask;
 	int nextHop;
 	int metric;
-	long timestamp;
+	long timeStamp;
 	
 	public RipEntry(int addr, int mask, int nextHop, int metric) {
 		this.addr = addr;
 		this.mask = mask;
 		this.nextHop = nextHop;
 		this.metric = metric;
-		this.timestamp = System.currentTimeMillis();
+		this.timeStamp = System.currentTimeMillis();
 	}
 }
 
