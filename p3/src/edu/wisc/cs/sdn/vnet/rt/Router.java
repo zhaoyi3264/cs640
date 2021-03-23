@@ -3,8 +3,6 @@ package edu.wisc.cs.sdn.vnet.rt;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
@@ -98,7 +96,6 @@ public class Router extends Device
 				}
 			}
 		};
-		// list of ip addresses with corresponding entries to be removed
 		Runnable purge = new Runnable(){
 			@Override
 			public void run(){
@@ -123,8 +120,12 @@ public class Router extends Device
 				}
 			}
 		};
-		new Thread(unsol).start();
-		new Thread(purge).start();
+		Thread t1 = new Thread(unsol);
+		Thread t2 = new Thread(purge);
+		t1.setDaemon(true);
+		t2.setDaemon(true);
+		t1.start();
+		t2.start();
 		System.out.println("RIP initialized...");
 	}
 
@@ -236,7 +237,7 @@ public class Router extends Device
 				}
 
 				if (metric >= Router.MAX_DIST) {
-					System.out.println("Soft deleting RIP entry..."
+					System.out.println("Deleting RIP entry..."
 						+ "\n\tdest: " + IPv4.fromIPv4Address(subnetAddr));
 					this.routeTable.remove(subnetAddr, mask);
 					this.ripTable.remove(subnetAddr);
