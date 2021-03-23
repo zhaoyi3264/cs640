@@ -1,7 +1,6 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Timer;
@@ -167,9 +166,6 @@ public class Router extends Device
 
 	private RIPv2 getRipPacket(Ethernet etherPacket) {
 		IPv4 ipPacket = (IPv4)etherPacket.getPayload();
-		if (ipPacket.getDestinationAddress() != IPv4.toIPv4Address("224.0.0.9")) {
-			return null;
-		}
 		// Make sure it's UDP
 		if (ipPacket.getProtocol() != IPv4.PROTOCOL_UDP) {
 			return null;
@@ -196,6 +192,7 @@ public class Router extends Device
 			case RIPv2.COMMAND_RESPONSE:
 				System.out.println("Handling RIP response from " + IPv4.fromIPv4Address(ip.getSourceAddress()));
 				this.handleRipResponse(ip, rip, iface);
+				System.out.println(this.routeTable);
 				break;
 		}
 	}
@@ -208,7 +205,6 @@ public class Router extends Device
 			int metric = Math.min(Router.MAX_DIST, entry.getMetric() + 1);
 			
 			RipEntry ripEntry = this.ripTable.get(subnetAddr);
-			boolean modified = false;
 			if (ripEntry == null) {
 				if (metric < Router.MAX_DIST) {
 					System.out.println("Creating RIP entry..."
@@ -217,36 +213,22 @@ public class Router extends Device
 						+ "\n\tmetric: " + metric);
 					this.ripTable.put(subnetAddr, new RipEntry(subnetAddr, mask, nextHop, metric));
 					this.routeTable.insert(subnetAddr, nextHop, mask, iface);
-					modified = true;
 				}
 			} else {
-				if (metric < ripEntry.metric) {
+				if (metric <= ripEntry.metric) {
 					System.out.println("Updating RIP entry..."
 						+ "\n\tdest: " + IPv4.fromIPv4Address(subnetAddr)
 						+ "\n\tnextHop: " + IPv4.fromIPv4Address(nextHop)
 						+ "\n\tmetric: " + metric);
 					this.ripTable.replace(subnetAddr, new RipEntry(subnetAddr, mask, nextHop, metric));
-					this.routeTable.update(subnetAddr, nextHop, mask, iface);
-					modified = true;
+					this.routeTable.update(subnetAddr, mask, nextHop, iface);
 				}
-				if (metric == ripEntry.metric) {
-					System.out.println("Updating RIP entry timestamp..."
-						+ "\n\tdest: " + IPv4.fromIPv4Address(subnetAddr)
-						+ "\n\tnextHop: " + IPv4.fromIPv4Address(nextHop)
-						+ "\n\tmetric: " + metric);
-					ripEntry.timeStamp = System.currentTimeMillis();
-				}
+
 				if (metric >= Router.MAX_DIST) {
 					System.out.println("Soft deleting RIP entry..."
 						+ "\n\tdest: " + IPv4.fromIPv4Address(subnetAddr));
 					this.routeTable.remove(subnetAddr, mask);
-					this.ripTable.replace(subnetAddr, new RipEntry(subnetAddr, mask, nextHop, metric));
-					modified = true;
-				}
-			}
-			if (modified) {
-				for (Iface i : interfaces.values()) {
-					sendRip(RipType.UNSOL, null, i);
+					this.ripTable.remove(subnetAddr);
 				}
 			}
 		}
@@ -290,14 +272,12 @@ public class Router extends Device
 		}
 
 		if (type == RipType.RES || type == RipType.UNSOL) {
-			ArrayList<RIPv2Entry> entries = new ArrayList<>();
 			for (Map.Entry<Integer, RipEntry> entry : this.ripTable.entrySet()) {
 				RipEntry ripEntry = entry.getValue();
 				RIPv2Entry tmp = new RIPv2Entry(ripEntry.addr, ripEntry.mask, ripEntry.metric);
 				tmp.setNextHopAddress(ripEntry.nextHop);
-				entries.add(tmp);
+				rip.addEntry(tmp);
 			}
-			rip.setEntries(entries);
 		}
 
 		udp.setPayload(rip);
