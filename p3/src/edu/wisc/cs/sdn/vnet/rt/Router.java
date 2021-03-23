@@ -82,38 +82,49 @@ public class Router extends Device
 			// send RIP request to all interfaces
 			this.sendRip(RipType.REQ, null, iface);
 		}
-		Timer timer = new Timer(true);
 		// unsolicited RIP response every 10 seconds
-		TimerTask unsol = new TimerTask() {
+		Runnable unsol = new Runnable() {
 			@Override
 			public void run() {
-				System.out.println("Sending UNSOLICITED RESPONSE...");
-				for (Iface iface : interfaces.values()) {
-					sendRip(RipType.UNSOL, null, iface);
-				}
-			}
-		};
-		timer.scheduleAtFixedRate(unsol, 0, 10000);
-		// list of ip addresses with corresponding entries to be removed
-		TimerTask purge = new TimerTask(){
-			@Override
-			public void run(){
-				Iterator<Map.Entry<Integer, RipEntry>> iterator = ripTable.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Map.Entry<Integer, RipEntry> entry = iterator.next();
-					RipEntry ripEntry = entry.getValue();
-					boolean expired = System.currentTimeMillis() - ripEntry.timeStamp >= 30000;
-					if (ripEntry.metric != 0 && expired) {
-						System.out.println("Removing expired entry...");
-						System.out.println("\tdest:" +  IPv4.fromIPv4Address(ripEntry.addr));
-						System.out.println("\tmetric:" + ripEntry.metric);
-						iterator.remove();
-						routeTable.remove(ripEntry.addr, ripEntry.mask);
+				while (true) {
+					System.out.println("Sending UNSOLICITED RESPONSE...");
+					for (Iface iface : interfaces.values()) {
+						sendRip(RipType.UNSOL, null, iface);
+					}
+					try {
+						Thread.sleep(10000);
+					} catch (InterruptedException e) {
 					}
 				}
 			}
 		};
-		timer.scheduleAtFixedRate(purge, 0, 1000);
+		// list of ip addresses with corresponding entries to be removed
+		Runnable purge = new Runnable(){
+			@Override
+			public void run(){
+				while (true) {
+					Iterator<Map.Entry<Integer, RipEntry>> iterator = ripTable.entrySet().iterator();
+					while (iterator.hasNext()) {
+						Map.Entry<Integer, RipEntry> entry = iterator.next();
+						RipEntry ripEntry = entry.getValue();
+						boolean expired = System.currentTimeMillis() - ripEntry.timeStamp >= 30000;
+						if (ripEntry.metric != 0 && expired) {
+							System.out.println("Removing expired entry...");
+							System.out.println("\tdest:" +  IPv4.fromIPv4Address(ripEntry.addr));
+							System.out.println("\tmetric:" + ripEntry.metric);
+							iterator.remove();
+							routeTable.remove(ripEntry.addr, ripEntry.mask);
+						}
+					}
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+					}
+				}
+			}
+		};
+		new Thread(unsol).start();
+		new Thread(purge).start();
 		System.out.println("RIP initialized...");
 	}
 
