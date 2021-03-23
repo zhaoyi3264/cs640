@@ -15,8 +15,6 @@ public class RIPv2Entry
 	protected int subnetMask;
 	protected int nextHopAddress;
 	protected int metric;
-	// add a time stamp
-	protected int timeStamp;
 
     public RIPv2Entry()
     { }
@@ -27,8 +25,6 @@ public class RIPv2Entry
         this.address = address;
         this.subnetMask = subnetMask;
         this.metric = metric;
-        // set timeStamp
-        this.timeStamp = (int)System.currentTimeMillis();
     }
 
 	public String toString()
@@ -39,9 +35,6 @@ public class RIPv2Entry
                 IPv4.fromIPv4Address(this.subnetMask),
                 IPv4.fromIPv4Address(this.nextHopAddress), this.metric);
 	}
-
-    public int getTime()
-    { return this.timeStamp; }
 
     public short getAddressFamily()
     { return this.addressFamily; }
@@ -131,3 +124,4 @@ public class RIPv2Entry
         return true; 
     }
 }
+
