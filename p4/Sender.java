@@ -36,12 +36,13 @@ public class Sender extends TCPUser {
     }
 
     public void run() throws IOException {
-        byte[] data = new byte[112];
-        // snd data
-        this.send(TCP.calculateFlags(0, 1, 0), data);
-        // rcv ack
-        this.receiveAck();
-
+        byte[] data = new byte[56];
+        for (int i = 0; i < 2; i++) {
+            // snd data
+            this.send(TCP.calculateFlags(0, 1, 0), data);
+            // rcv ack
+            this.receiveAck();
+        }
         this.disconnect();
     }
 

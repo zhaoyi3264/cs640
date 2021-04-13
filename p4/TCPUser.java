@@ -38,7 +38,7 @@ public abstract class TCPUser {
     protected void send(int flags, byte[] data) throws IOException {
 		DatagramPacket p = TCP.createPacket(this.remoteAddress, this.remotePort, this.seq, this.ack, flags, data);
         this.socket.send(p);
-        double elapsed = (System.nanoTime() - this.start) / 1_000_000_000;
+        double elapsed = (System.nanoTime() - this.start) / 1E9;
         char syn = ((flags & 4) == 4) ? 'S' : '-';
         char ack = ((flags & 2) == 2) ? 'A' : '-';
         char fin = ((flags & 1) == 1) ? 'F' : '-';
@@ -54,7 +54,7 @@ public abstract class TCPUser {
         // System.out.println("Receive p from remote port " + p.getPort());
         TCP tcp = TCP.asTCP(p);
         this.ack += tcp.length;
-        double elapsed = (System.nanoTime() - this.start) / 1_000_000_000;
+        double elapsed = (System.nanoTime() - this.start) / 1E9;
         char syn = tcp.SYN ? 'S' : '-';
         char ack = tcp.ACK ? 'A' : '-';
         char fin = tcp.FIN ? 'F' : '-';

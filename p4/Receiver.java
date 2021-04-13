@@ -33,12 +33,24 @@ public class Receiver extends TCPUser {
     }
 
     public void run() throws IOException {
-        // rcv data 
-        TCP tcp = this.receive();
-        // snd ack
-        this.sendAck();
-
-        this.disconnect();
+        while (true) {
+            // rcv data 
+            TCP tcp = this.receive();
+            if (tcp.SYN) {
+                throw new IllegalStateException("Did not expect SYN");
+            }
+            if (tcp.ACK && tcp.FIN) {
+                throw new IllegalStateException("Did not expect ACK-FIN");
+            }
+            if (tcp.ACK) {
+                // snd ack
+                this.sendAck();
+            }
+            if (tcp.FIN) {
+                this.disconnect();
+                break;
+            }
+        }
     }
 
     public void disconnect() throws IOException {
@@ -68,11 +80,7 @@ public class Receiver extends TCPUser {
 
     private TCP receiveFin() throws IOException {
         this.ack += 1;
-        TCP tcp = this.receive();
-        if (tcp.SYN || tcp.ACK || !tcp.FIN) {
-            throw new IllegalStateException("Did not receive FIN");
-        }
-        return tcp;
+        return null;
     }
 
     private void sendAckFin() throws IOException {
