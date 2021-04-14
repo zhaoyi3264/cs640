@@ -8,11 +8,11 @@ clean:
 
 send: TCPend
 	clear
-	java TCPend -p 5000 -s 127.0.0.1 -a 8000 -f Makefile -m 8 -c 32
+	java TCPend -p 5000 -s 127.0.0.1 -a 8000 -f Makefile -m 8 -c 4
 
 receive: TCPend
 	clear
-	java TCPend -p 8000 -m 8 -c 32 -f receive
+	java TCPend -p 8000 -m 8 -c 4 -f receive
 
 test: TCPend Test.java
 	clear
