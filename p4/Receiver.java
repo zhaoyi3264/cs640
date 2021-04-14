@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 
 // passive
-public class Receiver extends TCPUser {
+public class Receiver extends TCPSocket {
 
     public Receiver(int port, int mtu, int sws, String file) {
         super(port, mtu, sws, file);
@@ -74,7 +74,7 @@ public class Receiver extends TCPUser {
     }
 
     private void sendSynAck() throws IOException {
-        this.send(TCP.calculateFlags(1, 1, 0), TCPUser.EMPTY_DATA);
+        this.send(TCP.calculateFlags(1, 1, 0), TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 
@@ -84,7 +84,7 @@ public class Receiver extends TCPUser {
     }
 
     private void sendAckFin() throws IOException {
-        this.send(TCP.calculateFlags(0, 1, 1), TCPUser.EMPTY_DATA);
+        this.send(TCP.calculateFlags(0, 1, 1), TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 }

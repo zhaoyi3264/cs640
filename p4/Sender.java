@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 // active
-public class Sender extends TCPUser {
+public class Sender extends TCPSocket {
 
     public Sender(int port, int mtu, int sws, String file, InetAddress remoteAddress, int remotePort) {
         super(port, mtu, sws, file);
@@ -57,7 +57,7 @@ public class Sender extends TCPUser {
     }
 
     private void sendSyn() throws IOException {
-        this.send(TCP.calculateFlags(1, 0, 0), TCPUser.EMPTY_DATA);
+        this.send(TCP.calculateFlags(1, 0, 0), TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 
@@ -70,7 +70,7 @@ public class Sender extends TCPUser {
     }
 
     private void sendFin() throws IOException {
-        this.send(TCP.calculateFlags(0, 0, 1), TCPUser.EMPTY_DATA);
+        this.send(TCP.calculateFlags(0, 0, 1), TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 

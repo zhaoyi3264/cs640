@@ -7,7 +7,7 @@ import java.net.UnknownHostException;;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public abstract class TCPUser {
+public abstract class TCPSocket {
 
     protected static final byte[] EMPTY_DATA = {};
 
@@ -24,7 +24,7 @@ public abstract class TCPUser {
 
     protected long start;
 
-    public TCPUser(int port, int mtu, int sws, String file) {
+    public TCPSocket(int port, int mtu, int sws, String file) {
         this.port = port;
         this.mtu = mtu;
         this.sws = sws;
@@ -64,7 +64,7 @@ public abstract class TCPUser {
     }
 
     protected void sendAck() throws IOException {
-        this.send(TCP.calculateFlags(0, 1, 0), TCPUser.EMPTY_DATA);
+        this.send(TCP.calculateFlags(0, 1, 0), TCPSocket.EMPTY_DATA);
     }
 
     protected TCP receiveAck() throws IOException {
