@@ -44,6 +44,7 @@ public abstract class TCPSocket {
         char fin = ((flags & 1) == 1) ? 'F' : '-';
         char d = (data.length != 0) ? 'D' : '-';
         System.out.println(String.format("snd %.3f %c %c %c %c %d %d %d", elapsed, syn, ack, fin, d, this.seq, data.length, this.ack));
+        // System.out.println(Arrays.toString(data));
         this.seq += data.length;
     }
 
@@ -60,6 +61,7 @@ public abstract class TCPSocket {
         char fin = tcp.FIN ? 'F' : '-';
         char d = (tcp.length != 0) ? 'D' : '-';
         System.out.println(String.format("rcv %.3f %c %c %c %c %d %d %d", elapsed, syn, ack, fin, d, tcp.seq, tcp.length, tcp.ack));
+        // System.out.println(Arrays.toString(tcp.data));
         return tcp;
     }
 

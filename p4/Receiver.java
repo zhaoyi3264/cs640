@@ -6,13 +6,17 @@ import java.net.SocketException;
 import java.net.UnknownHostException;;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.LinkedBlockingQueue;
 
 
 // passive
 public class Receiver extends TCPSocket {
 
+    private LinkedBlockingQueue<TCP> buffer;
+
     public Receiver(int port, int mtu, int sws, String file) {
         super(port, mtu, sws, file);
+        this.buffer = new LinkedBlockingQueue<>(sws);
         try {
             this.socket = new DatagramSocket(this.port);
         } catch (SocketException e) {
@@ -32,25 +36,55 @@ public class Receiver extends TCPSocket {
         System.out.println("Connection established");
     }
 
-    public void run() throws IOException {
-        while (true) {
-            // rcv data 
-            TCP tcp = this.receive();
-            if (tcp.SYN) {
-                throw new IllegalStateException("Did not expect SYN");
-            }
-            if (tcp.ACK && tcp.FIN) {
-                throw new IllegalStateException("Did not expect ACK-FIN");
-            }
-            if (tcp.ACK) {
-                // snd ack
+    private void producer() {
+        try{
+            while (true) {
+                TCP tcp = this.receive();
+                if (tcp.seq == (this.ack - tcp.length)) {
+                    this.buffer.put(tcp);
+                } else {
+                    this.ack -= tcp.length;
+                }
                 this.sendAck();
             }
-            if (tcp.FIN) {
-                this.disconnect();
-                break;
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
+
+    private void consumer() {
+        try {
+            while (true) {
+                TCP tcp = this.buffer.take();
+                System.out.println("Write data " + Arrays.toString(tcp.data));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void run() throws IOException {
+        new Thread(() -> producer()).start();
+        new Thread(() -> consumer()).start();
+        // while (true) {
+        //     // rcv data 
+        //     TCP tcp = this.receive();
+        //     if (tcp.SYN) {
+        //         throw new IllegalStateException("Did not expect SYN");
+        //     }
+        //     if (tcp.ACK && tcp.FIN) {
+        //         throw new IllegalStateException("Did not expect ACK-FIN");
+        //     }
+        //     if (tcp.ACK) {
+        //         // snd ack
+        //         this.sendAck();
+        //     }
+        //     if (tcp.FIN) {
+        //         this.disconnect();
+        //         break;
+        //     }
+        // }
+        // this.disconnect();
     }
 
     public void disconnect() throws IOException {
