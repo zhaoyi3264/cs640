@@ -1,9 +1,7 @@
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -72,7 +70,8 @@ public class Sender extends TCPSocket {
                         dup = 0;
                     }
                 } else {
-                this.buffer.take();
+                    dup = 0;
+                    this.buffer.take();
                 }
                 lastAck = tcp.ack;
             }
@@ -81,7 +80,7 @@ public class Sender extends TCPSocket {
         }
     }
 
-    private void retransmit() throws IOException {
+    private void retransmit() {
         for (byte[] data : this.buffer) {
             this.seq -= data.length;
         }
@@ -90,26 +89,18 @@ public class Sender extends TCPSocket {
         }
     }
 
-    public void run() throws IOException {
+    public void run() {
         new Thread(() -> producer()).start();
         new Thread(() -> consumer()).start();
-        // byte[] data = new byte[56];
-        // for (int i = 0; i < 2; i++) {
-        //     // snd data
-        //     this.send(TCP.calculateFlags(0, 1, 0), data);
-        //     // rcv ack
-        //     this.receiveAck();
-        // }
-        // this.disconnect();
     }
 
-    private void disconnect() throws IOException {
+    private void disconnect() {
         // snd FIN
         this.sendFin();
         // rcv ACK-FIN
-        TCPPacket tcp = this.receiveAckFin();
+        this.receiveAckFin();
         // snd ACK
-        this.sendAck(tcp.timestamp);
+        this.sendAck(-1);
         System.out.println("Connection closed");
     }
 

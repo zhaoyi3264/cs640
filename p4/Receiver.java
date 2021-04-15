@@ -1,13 +1,10 @@
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
-
 
 // passive
 public class Receiver extends TCPSocket {
@@ -31,7 +28,7 @@ public class Receiver extends TCPSocket {
         // snd SYN-ACK
         this.sendSynAck();
         // rcv ACK
-        tcp = this.receiveAck();
+        this.receiveAck();
         System.out.println("Connection established");
     }
 
@@ -62,28 +59,9 @@ public class Receiver extends TCPSocket {
         }
     }
 
-    public void run() throws IOException {
+    public void run() {
         new Thread(() -> producer()).start();
         new Thread(() -> consumer()).start();
-        // while (true) {
-        //     // rcv data 
-        //     TCP tcp = this.receive();
-        //     if (tcp.SYN) {
-        //         throw new IllegalStateException("Did not expect SYN");
-        //     }
-        //     if (tcp.ACK && tcp.FIN) {
-        //         throw new IllegalStateException("Did not expect ACK-FIN");
-        //     }
-        //     if (tcp.ACK) {
-        //         // snd ack
-        //         this.sendAck();
-        //     }
-        //     if (tcp.FIN) {
-        //         this.disconnect();
-        //         break;
-        //     }
-        // }
-        // this.disconnect();
     }
 
     public void disconnect() {

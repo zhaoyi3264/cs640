@@ -3,7 +3,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -48,7 +47,8 @@ public abstract class TCPSocket {
         char ack = ACK ? 'A' : '-';
         char fin = FIN ? 'F' : '-';
         char d = (data.length != 0) ? 'D' : '-';
-        System.out.println(String.format("snd %.3f %c %c %c %c %d %d %d", elapsed, syn, ack, fin, d, this.seq, data.length, this.ack));
+        System.out.println(String.format("snd %.3f %c %c %c %c %d %d %d",
+            elapsed, syn, ack, fin, d, this.seq, data.length, this.ack));
         // System.out.println(Arrays.toString(data));
         this.seq += data.length;
     }
@@ -69,7 +69,8 @@ public abstract class TCPSocket {
         char ack = tcp.ACK ? 'A' : '-';
         char fin = tcp.FIN ? 'F' : '-';
         char d = (tcp.data.length != 0) ? 'D' : '-';
-        System.out.println(String.format("rcv %.3f %c %c %c %c %d %d %d", elapsed, syn, ack, fin, d, tcp.seq, tcp.data.length, tcp.ack));
+        System.out.println(String.format("rcv %.3f %c %c %c %c %d %d %d",
+            elapsed, syn, ack, fin, d, tcp.seq, tcp.data.length, tcp.ack));
         // System.out.println(Arrays.toString(tcp.data));
         return tcp;
     }
