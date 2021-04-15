@@ -9,6 +9,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 // active
 public class Sender extends TCPSocket {
 
+    private volatile boolean finSent;
+
     private LinkedBlockingQueue<byte[]> buffer;
     private Timeout timeout;
 
@@ -16,12 +18,13 @@ public class Sender extends TCPSocket {
         super(port, mtu, sws, file);
         this.remoteAddress = remoteAddress;
         this.remotePort = remotePort;
+        this.finSent = false;
         this.buffer = new LinkedBlockingQueue<>(sws);
         this.timeout = new Timeout(5_000_000_000L);
 
         try {
             this.socket = new DatagramSocket(port);
-        } catch (SocketException e) {
+        } catch(SocketException e) {
             e.printStackTrace();
         }
         this.socket.connect​(this.remoteAddress, this.remotePort);
@@ -43,7 +46,7 @@ public class Sender extends TCPSocket {
 
     private void producer() {
         try {
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 10; i++) {
                 byte[] data = new byte[this.mtu];
                 Arrays.fill(data, (byte)i);
                 this.buffer.put(data);
@@ -54,6 +57,9 @@ public class Sender extends TCPSocket {
                 }
                 this.send(-1, false, false, false, data);
             }
+            this.sendFin();
+            this.finSent = true;
+            System.out.println("FIN sent");
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -63,9 +69,10 @@ public class Sender extends TCPSocket {
         int lastAck = -1;
         int dup = 0;
         // int retransmit = 0;
+        TCPPacket tcp;
         try {
-            while (true) {
-                TCPPacket tcp = this.receiveAck();
+            while (!this.finSent || this.buffer.size() > 0) {
+                tcp = this.receiveAck();
                 this.timeout.update(tcp.seq, tcp.timestamp);
                 if (tcp.ack == lastAck) {
                     dup += 1;
@@ -79,7 +86,7 @@ public class Sender extends TCPSocket {
                 }
                 lastAck = tcp.ack;
             }
-        } catch (Exception e) {
+        } catch(Exception e) {
             e.printStackTrace();
         }
     }
@@ -97,6 +104,14 @@ public class Sender extends TCPSocket {
     public void run() {
         new Thread(() -> producer()).start();
         new Thread(() -> consumer()).start();
+        new Thread(() -> {
+            while(!this.finSent || this.buffer.size() > 0) {
+            }
+            this.receiveAckFin();
+            System.out.println("ACK-FIN received");
+            this.sendAck(-1);
+            System.out.println("ACK sent");
+        }).start();
     }
 
     @Override

@@ -50,7 +50,7 @@ public abstract class TCPSocket {
             this.ack, timestamp, SYN, ACK, FIN, data).toDatagramPacket();
         try {
             this.socket.send(p);
-        } catch (IOException e){
+        } catch(IOException e){
             e.printStackTrace();
         }
         double elapsed = (System.nanoTime() - this.start) / 1E9;
@@ -69,7 +69,7 @@ public abstract class TCPSocket {
 		DatagramPacket p = new DatagramPacket(buf, buf.length);
         try {
             socket.receive(p);
-        } catch (IOException e) {
+        } catch(IOException e) {
             e.printStackTrace();
         }
         // System.out.println("Receive p from remote port " + p.getPort());
@@ -151,6 +151,7 @@ public abstract class TCPSocket {
     }
 
     protected void sendAckFin() {
+        this.ack += 1;
         this.send(-1, false, true, true, TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
