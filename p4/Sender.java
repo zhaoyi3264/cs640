@@ -9,7 +9,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 // active
 public class Sender extends TCPSocket {
 
-    private volatile boolean finSent;
+    private volatile boolean prodStopped;
 
     private LinkedBlockingQueue<byte[]> buffer;
     private Timeout timeout;
@@ -18,7 +18,7 @@ public class Sender extends TCPSocket {
         super(port, mtu, sws, file);
         this.remoteAddress = remoteAddress;
         this.remotePort = remotePort;
-        this.finSent = false;
+        this.prodStopped = false;
         this.buffer = new LinkedBlockingQueue<>(sws);
         this.timeout = new Timeout(5_000_000_000L);
 
@@ -46,46 +46,57 @@ public class Sender extends TCPSocket {
 
     private void producer() {
         try {
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 100; i++) {
                 byte[] data = new byte[this.mtu];
                 Arrays.fill(data, (byte)i);
                 this.buffer.put(data);
-                // skip package 2
-                if (i == 1) {
+                // skip package(s)
+                if (i % 10 == 0) {
                     this.seq += (this.mtu);
                     continue;
                 }
                 this.send(-1, false, false, false, data);
             }
-            this.sendFin();
-            this.finSent = true;
-            System.out.println("FIN sent");
+            this.prodStopped = true;
+            System.out.println("Producer stop");
         } catch(Exception e) {
             e.printStackTrace();
         }
     }
 
     private void consumer() {
-        int lastAck = -1;
+        int lastAck = 1;
         int dup = 0;
         // int retransmit = 0;
         TCPPacket tcp;
         try {
-            while (!this.finSent || this.buffer.size() > 0) {
+            while (true) {
                 tcp = this.receiveAck();
                 this.timeout.update(tcp.seq, tcp.timestamp);
                 if (tcp.ack == lastAck) {
                     dup += 1;
+                    System.out.println("Duplicate " + dup);
                     if (dup == 3) {
                         this.retransmit();
                         dup = 0;
                     }
                 } else {
                     dup = 0;
-                    this.buffer.take();
+                    byte[] data = this.buffer.take();
                 }
                 lastAck = tcp.ack;
+                if (this.prodStopped && this.buffer.size() == 0) {
+                    System.out.println("Consumer stop");
+                    break;
+                }
             }
+            // disconnect
+            this.sendFin();
+            System.out.println("FIN sent");
+            this.receiveAckFin();
+            System.out.println("ACK-FIN received");
+            this.sendAck(-1);
+            System.out.println("ACK sent");
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -104,24 +115,5 @@ public class Sender extends TCPSocket {
     public void run() {
         new Thread(() -> producer()).start();
         new Thread(() -> consumer()).start();
-        new Thread(() -> {
-            while(!this.finSent || this.buffer.size() > 0) {
-            }
-            this.receiveAckFin();
-            System.out.println("ACK-FIN received");
-            this.sendAck(-1);
-            System.out.println("ACK sent");
-        }).start();
-    }
-
-    @Override
-    protected void disconnect() {
-        // snd FIN
-        this.sendFin();
-        // rcv ACK-FIN
-        this.receiveAckFin();
-        // snd ACK
-        this.sendAck(-1);
-        System.out.println("Connection closed");
     }
 }

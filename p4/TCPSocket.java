@@ -41,8 +41,6 @@ public abstract class TCPSocket {
 
     public abstract void connect();
 
-    protected abstract void disconnect();
-
     public abstract void run();
 
     protected void send(long timestamp, boolean SYN, boolean ACK, boolean FIN,  byte[] data) {

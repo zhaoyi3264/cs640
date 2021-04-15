@@ -8,13 +8,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 // passive
 public class Receiver extends TCPSocket {
 
-    private volatile boolean finReceived;
-
     private LinkedBlockingQueue<TCPPacket> buffer;
 
     public Receiver(int port, int mtu, int sws, String file) {
         super(port, mtu, sws, file);
-        this.finReceived = false;
         this.buffer = new LinkedBlockingQueue<>(sws);
         try {
             this.socket = new DatagramSocket(this.port);
@@ -39,21 +36,18 @@ public class Receiver extends TCPSocket {
         TCPPacket tcp;
         try {
             while(true) {
-                System.out.println("here");
-                if (this.finReceived) {
-                    break;
-                } else {
-                    tcp = this.receive();
-                }
+                tcp = this.receive();
                 if (tcp.seq == (this.ack - tcp.data.length)) {
                     this.buffer.put(tcp);
                 } else {
                     this.ack -= tcp.data.length;
                     System.out.println("Incorrect seq");
                 }
-                if (!tcp.SYN && !tcp.ACK && !tcp.FIN) {
-                    this.sendAck(tcp.timestamp);
+                if (tcp.FIN) {
+                    System.out.println("Producer stop");
+                    break;
                 }
+                this.sendAck(tcp.timestamp);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -62,18 +56,20 @@ public class Receiver extends TCPSocket {
 
     private void consumer() {
         try {
-            while (!this.finReceived) {
+            while (true) {
                 TCPPacket tcp = this.buffer.take();
-                if (!this.finReceived) {
-                    this.finReceived = tcp.FIN;
-                }
-                System.out.println("buffer size " + this.buffer.size());
-                System.out.println(this.finReceived);
-                if (tcp.SYN || tcp.ACK || tcp.FIN) {
-                    continue;
+                if (tcp.FIN) {
+                    System.out.println("FIN received");
+                    System.out.println("Consumer stop");
+                    break;
                 }
                 System.out.println("Write data " + Arrays.toString(tcp.data));
             }
+            // disconnect
+            this.sendAckFin();
+            System.out.println("ACK-FIN sent");
+            this.receiveAck();
+            System.out.println("ACK received");
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -83,24 +79,5 @@ public class Receiver extends TCPSocket {
     public void run() {
         new Thread(() -> producer()).start();
         new Thread(() -> consumer()).start();
-        new Thread(() -> {
-            while(!this.finReceived || this.buffer.size() > 0) {
-            }
-            this.sendAckFin();
-            System.out.println("ACK-FIN sent");
-            this.receiveAck();
-            System.out.println("ACK received");
-        }).start();
-    }
-
-    @Override
-    protected void disconnect() {
-        // rcv FIN
-        this.receiveFin();
-        // snd ACK-FIN
-        this.sendAckFin();
-        // rcv ACK
-        this.receiveAck();
-        System.out.println("Connection closed");
     }
 }
