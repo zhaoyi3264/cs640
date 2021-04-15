@@ -6,6 +6,7 @@ import java.util.Arrays;
 public class TCPPacket {
     
     public static final int HLEN = 24;
+    public static final byte[] EMPTY_DATA = {};
 
     public InetAddress remoteAddress;
     public int remotePort;
@@ -47,7 +48,7 @@ public class TCPPacket {
         // ack
         bb.putInt(ack);
         // timestamp
-        if (timestamp == -1) {
+        if(timestamp == -1) {
             bb.putLong(System.nanoTime());
         } else {
             bb.putLong(timestamp);
@@ -74,7 +75,7 @@ public class TCPPacket {
         long timestamp = bb.getLong();
         // length and flags
         int l = bb.getInt();
-        if ((l >>> 3) != length) {
+        if((l >>> 3) != length) {
             throw new IllegalStateException(String.format(
                 "Package length is not set correctly."
                 + "Packet data field indicated: %d, Packet object field indicated: %d",

@@ -13,10 +13,12 @@ public class Receiver extends TCPSocket {
     public Receiver(int port, int mtu, int sws, String file) {
         super(port, mtu, sws, file);
         this.state = TCPState.LISTEN;
+
         this.buffer = new LinkedBlockingQueue<>(sws);
+        
         try {
             this.socket = new DatagramSocket(this.port);
-            this.socket.setSoTimeout(5_000);
+            this.socket.setSoTimeout(TCPSocket.DEFAULT_TIMEOUT);
         } catch(SocketException e) {
             e.printStackTrace();
         }
@@ -29,7 +31,7 @@ public class Receiver extends TCPSocket {
             switch(this.state) {
                 case LISTEN:
                     TCPPacket tcp = this.receiveSyn();
-                    if (tcp != null) {
+                    if(tcp != null) {
                         this.sendSynAck(tcp.timestamp);
                         this.state = TCPState.SYN_RECEIVED;
                     }
@@ -46,54 +48,75 @@ public class Receiver extends TCPSocket {
     }
 
     private void producer() {
-        TCPPacket tcp;
-        try {
-            while(true) {
-                tcp = this.receive();
-                if (tcp.seq == (this.ack - tcp.data.length)) {
-                    this.buffer.put(tcp);
-                } else {
-                    this.ack -= tcp.data.length;
-                    System.out.println("Incorrect seq");
-                }
-                if (tcp.FIN) {
-                    System.out.println("Producer stop");
+        while(true) {
+            switch(this.state) {
+                case ESTABLISHED:
+                    try {
+                        TCPPacket tcp = this.receive();
+                        if(tcp.seq == (this.ack - tcp.data.length)) {
+                            this.buffer.put(tcp);
+                        } else {
+                            this.ack -= tcp.data.length;
+                            System.out.println("Incorrect seq");
+                        }
+                        if(tcp.FIN) {
+                            return;
+                        }
+                        this.sendAck(tcp.timestamp);
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
                     break;
-                }
-                if (tcp.seq == 9 || tcp.seq == 25 || tcp.seq == 17) {
-                    continue;
-                }
-                this.sendAck(tcp.timestamp);
+                case CLOSE_WAIT:
+                case LAST_ACK:
+                    return;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
     private void consumer() {
-        try {
-            while (true) {
-                TCPPacket tcp = this.buffer.take();
-                if (tcp.FIN) {
-                    System.out.println("FIN received");
-                    System.out.println("Consumer stop");
+        // TODO: retransmit, revert seq and ack
+        while(true) {
+            switch(this.state) {
+                case ESTABLISHED:
+                    System.out.println("ESTABLISHED");
+                    try {
+                        TCPPacket tcp = this.buffer.take();
+                        if(tcp.FIN) {
+                            this.state = TCPState.CLOSE_WAIT;
+                        } else {
+                            System.out.println("Write data " + Arrays.toString(tcp.data));
+                        }
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
                     break;
-                }
-                System.out.println("Write data " + Arrays.toString(tcp.data));
+                case CLOSE_WAIT:
+                    System.out.println("CLOSE_WAIT");
+                    this.sendAckFin();
+                    this.state = TCPState.LAST_ACK;
+                    break;
+                case LAST_ACK:
+                    System.out.println("LAST_ACK");
+                    TCPPacket tcp = this.receiveAck();
+                    if(tcp != null) {
+                        this.state = TCPState.CLOSED;
+                    } else {
+                        this.state = TCPState.CLOSE_WAIT;
+                    }
+                    break;
+                case CLOSED:
+                    System.out.println("Connection closed");
+                    return;
             }
-            // disconnect
-            this.sendAckFin();
-            System.out.println("ACK-FIN sent");
-            this.receiveAck();
-            System.out.println("ACK received");
-        } catch(Exception e) {
-            e.printStackTrace();
         }
     }
 
     @Override
     public void run() {
-        new Thread(() -> producer()).start();
-        new Thread(() -> consumer()).start();
+        Thread p = new Thread(() -> producer());
+        Thread c = new Thread(() -> consumer());
+        p.start();
+        c.start();
     }
 }

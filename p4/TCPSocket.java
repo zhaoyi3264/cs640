@@ -10,9 +10,9 @@ import java.util.Arrays;
 public abstract class TCPSocket {
 
     public static final int MAX_RETRANSMIT = 16;
-    protected static final byte[] EMPTY_DATA = {};
+    public static final int DEFAULT_TIMEOUT = 5000;
 
-    protected TCPState state;
+    protected volatile TCPState state;
 
     protected int port;
     protected int mtu;
@@ -29,7 +29,7 @@ public abstract class TCPSocket {
 
     public TCPSocket(int port, int mtu, int sws, String file) {
 
-        if (mtu > 1430) {
+        if(mtu > 1430) {
             throw new IllegalArgumentException("MTU must be less than or equal to 1430");
         }
 
@@ -93,12 +93,12 @@ public abstract class TCPSocket {
 
     // for both
     protected void sendAck(long timestamp) {
-        this.send(timestamp, false, true, false, TCPSocket.EMPTY_DATA);
+        this.send(timestamp, false, true, false, TCPPacket.EMPTY_DATA);
     }
 
     protected TCPPacket receiveAck() {
         TCPPacket tcp = this.receive();
-        if (tcp == null || tcp.SYN || !tcp.ACK || tcp.FIN) {
+        if(tcp == null || tcp.SYN || !tcp.ACK || tcp.FIN) {
             System.err.println("Did not receive ACK");
         }
         return tcp;
@@ -106,28 +106,28 @@ public abstract class TCPSocket {
 
     // for sender
     protected void sendSyn() {
-        this.send(-1, true, false, false, TCPSocket.EMPTY_DATA);
+        this.send(-1, true, false, false, TCPPacket.EMPTY_DATA);
         this.seq += 1;
     }
 
     protected TCPPacket receiveSynAck() {
         this.ack += 1;
         TCPPacket tcp = this.receive();
-        if (tcp == null || !tcp.SYN || !tcp.ACK || tcp.FIN) {
+        if(tcp == null || !tcp.SYN || !tcp.ACK || tcp.FIN) {
             System.err.println("Did not receive SYN-ACK");
         }
         return tcp;
     }
 
     protected void sendFin() {
-        this.send(-1, false, false, true, TCPSocket.EMPTY_DATA);
+        this.send(-1, false, false, true, TCPPacket.EMPTY_DATA);
         this.seq += 1;
     }
 
     protected TCPPacket receiveAckFin() {
         this.ack += 1;
         TCPPacket tcp = this.receive();
-        if (tcp.SYN || !tcp.ACK || !tcp.FIN) {
+        if(tcp == null || tcp.SYN || !tcp.ACK || !tcp.FIN) {
             System.err.println("Did not receive ACK-FIN");
         }
         return tcp;
@@ -137,7 +137,7 @@ public abstract class TCPSocket {
     protected TCPPacket receiveSyn() {
         this.ack += 1;
         TCPPacket tcp = this.receive();
-        if (tcp == null || !tcp.SYN || tcp.ACK || tcp.FIN) {
+        if(tcp == null || !tcp.SYN || tcp.ACK || tcp.FIN) {
             System.err.println("Did not receive SYN");
         } else {
             this.remoteAddress = tcp.remoteAddress;
@@ -147,7 +147,7 @@ public abstract class TCPSocket {
     }
 
     protected void sendSynAck(long timestamp) {
-        this.send(timestamp, true, true, false, TCPSocket.EMPTY_DATA);
+        this.send(timestamp, true, true, false, TCPPacket.EMPTY_DATA);
         this.seq += 1;
     }
 
@@ -158,7 +158,7 @@ public abstract class TCPSocket {
 
     protected void sendAckFin() {
         this.ack += 1;
-        this.send(-1, false, true, true, TCPSocket.EMPTY_DATA);
+        this.send(-1, false, true, true, TCPPacket.EMPTY_DATA);
         this.seq += 1;
     }
 }

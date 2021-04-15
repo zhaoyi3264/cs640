@@ -11,9 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 // active
 public class Sender extends TCPSocket {
 
-    private volatile boolean prodStopped;
-
-    static private Timer timer;
+    private Timer timer;
     private LinkedBlockingQueue<BufferEntry> buffer;
     private Timeout timeout;
 
@@ -22,14 +20,14 @@ public class Sender extends TCPSocket {
         this.state = TCPState.CLOSED;
         this.remoteAddress = remoteAddress;
         this.remotePort = remotePort;
-        this.prodStopped = false;
+
         this.timer = new Timer(true);
         this.buffer = new LinkedBlockingQueue<>(sws);
-        this.timeout = new Timeout(5_000_000_000L);
+        this.timeout = new Timeout(TCPSocket.DEFAULT_TIMEOUT * 1_000_000);
 
         try {
             this.socket = new DatagramSocket(port);
-            this.socket.setSoTimeout(5_000);
+            this.socket.setSoTimeout(TCPSocket.DEFAULT_TIMEOUT);
         } catch(SocketException e) {
             e.printStackTrace();
         }
@@ -44,7 +42,7 @@ public class Sender extends TCPSocket {
         while(true) {
             switch(this.state) {
                 case CLOSED:
-                    if (retrans > TCPSocket.MAX_RETRANSMIT) {
+                    if(retrans > TCPSocket.MAX_RETRANSMIT) {
                         System.err.println("Max retransmit time exceeded");
                         System.exit(1);
                     }
@@ -55,7 +53,7 @@ public class Sender extends TCPSocket {
                 case SYN_SENT:
                     // receive syn-ack
                     TCPPacket tcp = this.receiveSynAck();
-                    if (tcp != null) {
+                    if(tcp != null) {
                         this.sendAck(-1);
                         this.state = TCPState.ESTABLISHED;
                     } else { // timeout
@@ -76,7 +74,7 @@ public class Sender extends TCPSocket {
             int retransTime = 0;
             @Override
             public void run() {
-                if (retransTime < 3) {
+                if(retransTime < 3) {
                     resend(seq, SYN, ACK, FIN, data);
                     retransTime += 1;
                 } else {
@@ -96,66 +94,91 @@ public class Sender extends TCPSocket {
         this.seq = old;
     }
 
+    private byte[] readData() {
+        return null;
+    }
+
     private void producer() {
-        try {
-            for (int i = 0; i < 10; i++) {
-                byte[] data = new byte[this.mtu];
-                Arrays.fill(data, (byte)i);
-                this.buffer.put(new BufferEntry(this.seq, data, null));
-                // skip package(s)
-                if (false) {
-                    this.seq += (this.mtu);
-                    continue;
-                }
-                this.send(-1, false, false, false, data);
+        // TODO: retransmit, revert seq and ack
+        while (true) {
+            switch(this.state) {
+                case ESTABLISHED:
+                    System.out.println("ESTABLISHED");
+                    byte[] data = this.readData();
+                    if(data == null) {
+                        if(this.buffer.size() == 0) {
+                            this.sendFin();
+                            this.state = TCPState.FIN_WAIT;
+                        }
+                    } else {
+                        try {
+                            this.buffer.put(new BufferEntry(this.seq, data, null));
+                        } catch(Exception e) {
+                            e.printStackTrace();
+                        }
+                        this.send(-1, false, false, false, data);
+                    }
+                    break;
+                case FIN_WAIT:
+                    System.out.println("FIN_WAIT");
+                    TCPPacket tcp = this.receiveAckFin();
+                    if(tcp != null) {
+                        this.sendAck(-1);
+                        this.state = TCPState.TIME_WAIT;
+                    } else {
+                        this.state = TCPState.ESTABLISHED;
+                    }
+                    break;
+                case TIME_WAIT:
+                    System.out.println("Connection closed");
+                    return;
+                case CLOSED:
+                    break;
             }
-            this.prodStopped = true;
-            System.out.println("Producer stop");
-        } catch(Exception e) {
-            e.printStackTrace();
         }
     }
 
     private void consumer() {
         int lastAck = 1;
         int dup = 0;
-        // int retransmit = 0;
-        TCPPacket tcp;
-        try {
-            while (true) {
-                tcp = this.receiveAck();
-                this.timeout.update(tcp.seq, tcp.timestamp);
-                if (tcp.ack == lastAck) {
-                    dup += 1;
-                    System.out.println("Duplicate " + dup);
-                    if (dup == 3) {
-                        this.retransmit();
-                        dup = 0;
+        while (true) {
+            switch(this.state) {
+                case ESTABLISHED:
+                    try {
+                        if(this.buffer.isEmpty()) {
+                            continue;
+                        }
+                        TCPPacket tcp = this.receiveAck();
+                        if(tcp == null) {
+                            continue;
+                        }
+                        this.timeout.update(tcp.seq, tcp.timestamp);
+                        if(tcp.ack == lastAck) {
+                            dup += 1;
+                            System.out.println("Duplicate " + dup);
+                            if(dup == 3) {
+                                this.retransmit();
+                                dup = 0;
+                            }
+                        } else {
+                            dup = 0;
+                            BufferEntry be = this.buffer.take();
+                            System.out.println("Remove " + be.seq);
+                            while ((be.seq + be.data.length) < tcp.ack - 1 && this.buffer.size() > 0) {
+                                be = this.buffer.take();
+                                System.out.println("Remove " + be.seq);
+                            }
+                        }
+                        lastAck = tcp.ack;
+                    } catch(Exception e) {
+                        e.printStackTrace();
                     }
-                } else {
-                    dup = 0;
-                    BufferEntry be = this.buffer.take();
-                    System.out.println("Remove " + be.seq);
-                    while ((be.seq + be.data.length) < tcp.ack - 1 && this.buffer.size() > 0) {
-                        be = this.buffer.take();
-                        System.out.println("Remove " + be.seq);
-                    }
-                }
-                lastAck = tcp.ack;
-                if (this.prodStopped && this.buffer.size() == 0) {
-                    System.out.println("Consumer stop");
                     break;
-                }
+                case FIN_WAIT:
+                case TIME_WAIT:
+                case CLOSED:
+                    return;
             }
-            // disconnect
-            this.sendFin();
-            System.out.println("FIN sent");
-            this.receiveAckFin();
-            System.out.println("ACK-FIN received");
-            this.sendAck(-1);
-            System.out.println("ACK sent");
-        } catch(Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -170,8 +193,10 @@ public class Sender extends TCPSocket {
 
     @Override
     public void run() {
-        new Thread(() -> producer()).start();
-        new Thread(() -> consumer()).start();
+        Thread p = new Thread(() -> producer());
+        Thread c = new Thread(() -> consumer());
+        p.start();
+        c.start();
     }
 }
 
