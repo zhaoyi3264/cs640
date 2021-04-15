@@ -39,6 +39,12 @@ public abstract class TCPSocket {
         this.start = System.nanoTime();
     }
 
+    public abstract void connect();
+
+    protected abstract void disconnect();
+
+    public abstract void run();
+
     protected void send(long timestamp, boolean SYN, boolean ACK, boolean FIN,  byte[] data) {
 		DatagramPacket p = new TCPPacket(this.remoteAddress, this.remotePort, this.seq,
             this.ack, timestamp, SYN, ACK, FIN, data).toDatagramPacket();
@@ -80,6 +86,7 @@ public abstract class TCPSocket {
         return tcp;
     }
 
+    // for both
     protected void sendAck(long timestamp) {
         this.send(timestamp, false, true, false, TCPSocket.EMPTY_DATA);
     }
@@ -90,5 +97,61 @@ public abstract class TCPSocket {
             throw new IllegalStateException("Did not receive ACK");
         }
         return tcp;
+    }
+
+    // for sender
+    protected void sendSyn() {
+        this.send(-1, true, false, false, TCPSocket.EMPTY_DATA);
+        this.seq += 1;
+    }
+
+    protected TCPPacket receiveSynAck() {
+        this.ack += 1;
+        TCPPacket tcp = this.receive();
+        if (!tcp.SYN || !tcp.ACK || tcp.FIN) {
+            throw new IllegalStateException("Did not receive SYN-ACK");
+        }
+        return tcp;
+    }
+
+    protected void sendFin() {
+        this.send(-1, false, false, true, TCPSocket.EMPTY_DATA);
+        this.seq += 1;
+    }
+
+    protected TCPPacket receiveAckFin() {
+        this.ack += 1;
+        TCPPacket tcp = this.receive();
+        if (tcp.SYN || !tcp.ACK || !tcp.FIN) {
+            throw new IllegalStateException("Did not receive ACK-FIN");
+        }
+        return tcp;
+    }
+
+    // for receiver
+    protected TCPPacket receiveSyn() {
+        this.ack += 1;
+        TCPPacket tcp = this.receive();
+        if (!tcp.SYN || tcp.ACK || tcp.FIN) {
+            throw new IllegalStateException("Did not receive SYN");
+        }
+        this.remoteAddress = tcp.remoteAddress;
+        this.remotePort = tcp.remotePort;
+        return tcp;
+    }
+
+    protected void sendSynAck(long timestamp) {
+        this.send(timestamp, true, true, false, TCPSocket.EMPTY_DATA);
+        this.seq += 1;
+    }
+
+    protected TCPPacket receiveFin() {
+        this.ack += 1;
+        return null;
+    }
+
+    protected void sendAckFin() {
+        this.send(-1, false, true, true, TCPSocket.EMPTY_DATA);
+        this.seq += 1;
     }
 }
