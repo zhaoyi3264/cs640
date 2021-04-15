@@ -11,12 +11,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Sender extends TCPSocket {
 
     private LinkedBlockingQueue<byte[]> buffer;
+    private Timeout timeout;
 
     public Sender(int port, int mtu, int sws, String file, InetAddress remoteAddress, int remotePort) {
         super(port, mtu, sws, file);
         this.remoteAddress = remoteAddress;
         this.remotePort = remotePort;
         this.buffer = new LinkedBlockingQueue<>(sws);
+        this.timeout = new Timeout(5);
 
         try {
             this.socket = new DatagramSocket(port);
@@ -33,20 +35,21 @@ public class Sender extends TCPSocket {
         this.sendSyn();
         // rcv SYN-ACK
         TCPPacket tcp = this.receiveSynAck();
+        this.timeout.update(tcp.seq, tcp.timestamp);
         // snd ACK
-        this.sendAck(tcp.timestamp);
+        this.sendAck(-1);
         System.out.println("Connection established");
     }
 
     private void producer() {
         try {
-            for (int i = 0; i < 7; i++) {
-                byte[] data = new byte[this.mtu - i];
+            for (int i = 0; i < 100; i++) {
+                byte[] data = new byte[this.mtu];
                 Arrays.fill(data, (byte)i);
                 this.buffer.put(data);
                 // skip package 2
                 if (i == 1) {
-                    this.seq += (this.mtu - i);
+                    this.seq += (this.mtu);
                     continue;
                 }
                 this.send(-1, false, false, false, data);
@@ -63,6 +66,8 @@ public class Sender extends TCPSocket {
         try {
             while (true) {
                 TCPPacket tcp = this.receiveAck();
+                this.timeout.update(tcp.seq, tcp.timestamp);
+                System.out.println(this.timeout.getTo());
                 if (tcp.ack == lastAck) {
                     dup += 1;
                     if (dup == 3) {

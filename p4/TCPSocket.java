@@ -24,6 +24,11 @@ public abstract class TCPSocket {
     protected long start;
 
     public TCPSocket(int port, int mtu, int sws, String file) {
+
+        if (mtu > 1430) {
+            throw new IllegalArgumentException("MTU must be less than or equal to 1430");
+        }
+
         this.port = port;
         this.mtu = mtu;
         this.sws = sws;

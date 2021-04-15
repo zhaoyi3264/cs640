@@ -26,7 +26,7 @@ public class Receiver extends TCPSocket {
         // rcv SYN
         TCPPacket tcp = this.receiveSyn();
         // snd SYN-ACK
-        this.sendSynAck();
+        this.sendSynAck(tcp.timestamp);
         // rcv ACK
         this.receiveAck();
         System.out.println("Connection established");
@@ -85,8 +85,8 @@ public class Receiver extends TCPSocket {
         return tcp;
     }
 
-    private void sendSynAck() {
-        this.send(-1, true, true, false, TCPSocket.EMPTY_DATA);
+    private void sendSynAck(long timestamp) {
+        this.send(timestamp, true, true, false, TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 
