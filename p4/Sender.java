@@ -11,7 +11,7 @@ public class Sender extends TCPSocket {
 
     private volatile boolean prodStopped;
 
-    private LinkedBlockingQueue<byte[]> buffer;
+    private LinkedBlockingQueue<BufferEntry> buffer;
     private Timeout timeout;
 
     public Sender(int port, int mtu, int sws, String file, InetAddress remoteAddress, int remotePort) {
@@ -46,12 +46,12 @@ public class Sender extends TCPSocket {
 
     private void producer() {
         try {
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 10; i++) {
                 byte[] data = new byte[this.mtu];
                 Arrays.fill(data, (byte)i);
-                this.buffer.put(data);
+                this.buffer.put(new BufferEntry(this.seq, data));
                 // skip package(s)
-                if (i % 10 == 0) {
+                if (false) {
                     this.seq += (this.mtu);
                     continue;
                 }
@@ -82,7 +82,12 @@ public class Sender extends TCPSocket {
                     }
                 } else {
                     dup = 0;
-                    byte[] data = this.buffer.take();
+                    BufferEntry be = this.buffer.take();
+                    System.out.println("Remove " + be.seq);
+                    while ((be.seq + be.data.length) < tcp.ack - 1 && this.buffer.size() > 0) {
+                        be = this.buffer.take();
+                        System.out.println("Remove " + be.seq);
+                    }
                 }
                 lastAck = tcp.ack;
                 if (this.prodStopped && this.buffer.size() == 0) {
@@ -103,11 +108,11 @@ public class Sender extends TCPSocket {
     }
 
     private void retransmit() {
-        for (byte[] data : this.buffer) {
-            this.seq -= data.length;
+        for (BufferEntry be : this.buffer) {
+            this.seq -= be.data.length;
         }
-        for (byte[] data : this.buffer) {
-            this.send(-1, false, false, false, data);
+        for (BufferEntry be : this.buffer) {
+            this.send(-1, false, false, false, be.data);
         }
     }
 
@@ -115,5 +120,15 @@ public class Sender extends TCPSocket {
     public void run() {
         new Thread(() -> producer()).start();
         new Thread(() -> consumer()).start();
+    }
+}
+
+class BufferEntry {
+    int seq;
+    byte[] data;
+
+    public BufferEntry(int seq, byte[] data) {
+        this.seq = seq;
+        this.data = data;
     }
 }

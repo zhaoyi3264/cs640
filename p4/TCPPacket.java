@@ -19,8 +19,8 @@ public class TCPPacket {
     public int checksum;
     public byte[] data;
 
-    public TCPPacket(InetAddress remoteAddress, int remotePort, int seq, int ack, long timestamp,
-        boolean SYN, boolean ACK, boolean FIN, byte[] data) {
+    public TCPPacket(InetAddress remoteAddress, int remotePort, int seq, int ack,
+        long timestamp, boolean SYN, boolean ACK, boolean FIN, byte[] data) {
         
         this.remoteAddress = remoteAddress;
         this.remotePort = remotePort;
@@ -75,7 +75,10 @@ public class TCPPacket {
         // length and flags
         int l = bb.getInt();
         if ((l >>> 3) != length) {
-            throw new IllegalStateException(String.format("Package length is not set correctly. (%d, %d)", (l >>> 3), length));
+            throw new IllegalStateException(String.format(
+                "Package length is not set correctly."
+                + "Packet data field indicated: %d, Packet object field indicated: %d",
+                (l >>> 3), length));
         }
         boolean SYN = (l & 4) == 4;
         boolean ACK = (l & 2) == 2;

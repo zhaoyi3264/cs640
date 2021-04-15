@@ -47,6 +47,9 @@ public class Receiver extends TCPSocket {
                     System.out.println("Producer stop");
                     break;
                 }
+                if (tcp.seq == 9 || tcp.seq == 25 || tcp.seq == 17) {
+                    continue;
+                }
                 this.sendAck(tcp.timestamp);
             }
         } catch (Exception e) {

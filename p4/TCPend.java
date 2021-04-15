@@ -47,22 +47,14 @@ public class TCPend {
 
     public static void sender(int port, InetAddress remoteAddress, int remotePort,
         String file, int mtu, int sws) {
-        try {
-            Sender sender = new Sender(port, mtu, sws, file, remoteAddress, remotePort);
-            sender.connect();
-            sender.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Sender sender = new Sender(port, mtu, sws, file, remoteAddress, remotePort);
+        sender.connect();
+        sender.run();
     }
 
     public static void receiver(int port, int mtu, int sws, String file) {
-        try {
-            Receiver receiver = new Receiver(port, mtu, sws, file);
-            receiver.connect();
-            receiver.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Receiver receiver = new Receiver(port, mtu, sws, file);
+        receiver.connect();
+        receiver.run();
     }
 }
