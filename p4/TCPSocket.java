@@ -35,42 +35,51 @@ public abstract class TCPSocket {
         this.start = System.nanoTime();
     }
 
-    protected void send(int flags, byte[] data) throws IOException {
-		DatagramPacket p = TCP.createPacket(this.remoteAddress, this.remotePort, this.seq, this.ack, flags, data);
-        this.socket.send(p);
+    protected void send(long timestamp, boolean SYN, boolean ACK, boolean FIN,  byte[] data) {
+		DatagramPacket p = new TCPPacket(this.remoteAddress, this.remotePort, this.seq,
+            this.ack, timestamp, SYN, ACK, FIN, data).toDatagramPacket();
+        try {
+            this.socket.send(p);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
         double elapsed = (System.nanoTime() - this.start) / 1E9;
-        char syn = ((flags & 4) == 4) ? 'S' : '-';
-        char ack = ((flags & 2) == 2) ? 'A' : '-';
-        char fin = ((flags & 1) == 1) ? 'F' : '-';
+        char syn = SYN ? 'S' : '-';
+        char ack = ACK ? 'A' : '-';
+        char fin = FIN ? 'F' : '-';
         char d = (data.length != 0) ? 'D' : '-';
         System.out.println(String.format("snd %.3f %c %c %c %c %d %d %d", elapsed, syn, ack, fin, d, this.seq, data.length, this.ack));
         // System.out.println(Arrays.toString(data));
         this.seq += data.length;
     }
 
-    protected TCP receive() throws IOException {
-        byte[] buf = new byte[1024];
+    protected TCPPacket receive() {
+        byte[] buf = new byte[TCPPacket.HLEN + this.mtu];
 		DatagramPacket p = new DatagramPacket(buf, buf.length);
-        socket.receive(p);
+        try {
+            socket.receive(p);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         // System.out.println("Receive p from remote port " + p.getPort());
-        TCP tcp = TCP.asTCP(p);
-        this.ack += tcp.length;
+        TCPPacket tcp = TCPPacket.fromDatagramPacket(p);
+        this.ack += tcp.data.length;
         double elapsed = (System.nanoTime() - this.start) / 1E9;
         char syn = tcp.SYN ? 'S' : '-';
         char ack = tcp.ACK ? 'A' : '-';
         char fin = tcp.FIN ? 'F' : '-';
-        char d = (tcp.length != 0) ? 'D' : '-';
-        System.out.println(String.format("rcv %.3f %c %c %c %c %d %d %d", elapsed, syn, ack, fin, d, tcp.seq, tcp.length, tcp.ack));
+        char d = (tcp.data.length != 0) ? 'D' : '-';
+        System.out.println(String.format("rcv %.3f %c %c %c %c %d %d %d", elapsed, syn, ack, fin, d, tcp.seq, tcp.data.length, tcp.ack));
         // System.out.println(Arrays.toString(tcp.data));
         return tcp;
     }
 
-    protected void sendAck() throws IOException {
-        this.send(TCP.calculateFlags(0, 1, 0), TCPSocket.EMPTY_DATA);
+    protected void sendAck(long timestamp) {
+        this.send(timestamp, false, true, false, TCPSocket.EMPTY_DATA);
     }
 
-    protected TCP receiveAck() throws IOException {
-        TCP tcp = this.receive();
+    protected TCPPacket receiveAck() {
+        TCPPacket tcp = this.receive();
         if (tcp.SYN || !tcp.ACK || tcp.FIN) {
             throw new IllegalStateException("Did not receive ACK");
         }

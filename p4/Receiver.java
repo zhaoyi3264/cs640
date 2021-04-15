@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 // passive
 public class Receiver extends TCPSocket {
 
-    private LinkedBlockingQueue<TCP> buffer;
+    private LinkedBlockingQueue<TCPPacket> buffer;
 
     public Receiver(int port, int mtu, int sws, String file) {
         super(port, mtu, sws, file);
@@ -25,27 +25,26 @@ public class Receiver extends TCPSocket {
         System.out.println("Receiver listening on port " + this.port);
     }
 
-    public void connect() throws IOException {
-        byte[] data = {};
+    public void connect() {
         // rcv SYN
-        this.receiveSyn();
+        TCPPacket tcp = this.receiveSyn();
         // snd SYN-ACK
         this.sendSynAck();
         // rcv ACK
-        this.receiveAck();
+        tcp = this.receiveAck();
         System.out.println("Connection established");
     }
 
     private void producer() {
         try{
             while (true) {
-                TCP tcp = this.receive();
-                if (tcp.seq == (this.ack - tcp.length)) {
+                TCPPacket tcp = this.receive();
+                if (tcp.seq == (this.ack - tcp.data.length)) {
                     this.buffer.put(tcp);
                 } else {
-                    this.ack -= tcp.length;
+                    this.ack -= tcp.data.length;
                 }
-                this.sendAck();
+                this.sendAck(tcp.timestamp);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,7 +54,7 @@ public class Receiver extends TCPSocket {
     private void consumer() {
         try {
             while (true) {
-                TCP tcp = this.buffer.take();
+                TCPPacket tcp = this.buffer.take();
                 System.out.println("Write data " + Arrays.toString(tcp.data));
             }
         } catch (Exception e) {
@@ -87,7 +86,7 @@ public class Receiver extends TCPSocket {
         // this.disconnect();
     }
 
-    public void disconnect() throws IOException {
+    public void disconnect() {
         // rcv FIN
         this.receiveFin();
         // snd ACK-FIN
@@ -97,28 +96,29 @@ public class Receiver extends TCPSocket {
         System.out.println("Connection closed");
     }
 
-    private void receiveSyn() throws IOException {
+    private TCPPacket receiveSyn() {
         this.ack += 1;
-        TCP tcp = this.receive();
+        TCPPacket tcp = this.receive();
         if (!tcp.SYN || tcp.ACK || tcp.FIN) {
             throw new IllegalStateException("Did not receive SYN");
         }
         this.remoteAddress = tcp.remoteAddress;
         this.remotePort = tcp.remotePort;
+        return tcp;
     }
 
-    private void sendSynAck() throws IOException {
-        this.send(TCP.calculateFlags(1, 1, 0), TCPSocket.EMPTY_DATA);
+    private void sendSynAck() {
+        this.send(-1, true, true, false, TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 
-    private TCP receiveFin() throws IOException {
+    private TCPPacket receiveFin() {
         this.ack += 1;
         return null;
     }
 
-    private void sendAckFin() throws IOException {
-        this.send(TCP.calculateFlags(0, 1, 1), TCPSocket.EMPTY_DATA);
+    private void sendAckFin() {
+        this.send(-1, false, true, true, TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 }

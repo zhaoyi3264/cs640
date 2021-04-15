@@ -34,14 +34,13 @@ public class Sender extends TCPSocket {
         // snd SYN
         this.sendSyn();
         // rcv SYN-ACK
-        this.receiveSynAck();
+        TCPPacket tcp = this.receiveSynAck();
         // snd ACK
-        this.sendAck();
+        this.sendAck(tcp.timestamp);
         System.out.println("Connection established");
     }
 
     private void producer() {
-        int flags = TCP.calculateFlags(0, 0, 0);
         try {
             for (int i = 0; i < 7; i++) {
                 byte[] data = new byte[this.mtu - i];
@@ -52,7 +51,7 @@ public class Sender extends TCPSocket {
                     this.seq += (this.mtu - i);
                     continue;
                 }
-                this.send(flags, data);
+                this.send(-1, false, false, false, data);
             }
         } catch(Exception e) {
             e.printStackTrace();
@@ -65,7 +64,7 @@ public class Sender extends TCPSocket {
         // int retransmit = 0;
         try {
             while (true) {
-                TCP tcp = this.receiveAck();
+                TCPPacket tcp = this.receiveAck();
                 if (tcp.ack == lastAck) {
                     dup += 1;
                     if (dup == 3) {
@@ -87,7 +86,7 @@ public class Sender extends TCPSocket {
             this.seq -= data.length;
         }
         for (byte[] data : this.buffer) {
-            this.send(0, data);
+            this.send(-1, false, false, false, data);
         }
     }
 
@@ -108,33 +107,34 @@ public class Sender extends TCPSocket {
         // snd FIN
         this.sendFin();
         // rcv ACK-FIN
-        this.receiveAckFin();
+        TCPPacket tcp = this.receiveAckFin();
         // snd ACK
-        this.sendAck();
+        this.sendAck(tcp.timestamp);
         System.out.println("Connection closed");
     }
 
-    private void sendSyn() throws IOException {
-        this.send(TCP.calculateFlags(1, 0, 0), TCPSocket.EMPTY_DATA);
+    private void sendSyn() {
+        this.send(-1, true, false, false, TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 
-    private void receiveSynAck() throws IOException {
+    private TCPPacket receiveSynAck() {
         this.ack += 1;
-        TCP tcp = this.receive();
+        TCPPacket tcp = this.receive();
         if (!tcp.SYN || !tcp.ACK || tcp.FIN) {
             throw new IllegalStateException("Did not receive SYN-ACK");
         }
+        return tcp;
     }
 
-    private void sendFin() throws IOException {
-        this.send(TCP.calculateFlags(0, 0, 1), TCPSocket.EMPTY_DATA);
+    private void sendFin() {
+        this.send(-1, false, false, true, TCPSocket.EMPTY_DATA);
         this.seq += 1;
     }
 
-    private TCP receiveAckFin() throws IOException {
+    private TCPPacket receiveAckFin() {
         this.ack += 1;
-        TCP tcp = this.receive();
+        TCPPacket tcp = this.receive();
         if (tcp.SYN || !tcp.ACK || !tcp.FIN) {
             throw new IllegalStateException("Did not receive ACK-FIN");
         }
