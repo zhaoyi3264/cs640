@@ -49,12 +49,12 @@ public class TCPend {
         String file, int mtu, int sws) {
         Sender sender = new Sender(port, mtu, sws, file, remoteAddress, remotePort);
         sender.connect();
-        sender.run();
+        // sender.run();
     }
 
     public static void receiver(int port, int mtu, int sws, String file) {
         Receiver receiver = new Receiver(port, mtu, sws, file);
         receiver.connect();
-        receiver.run();
+        // receiver.run();
     }
 }

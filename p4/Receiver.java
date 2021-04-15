@@ -12,9 +12,11 @@ public class Receiver extends TCPSocket {
 
     public Receiver(int port, int mtu, int sws, String file) {
         super(port, mtu, sws, file);
+        this.state = TCPState.LISTEN;
         this.buffer = new LinkedBlockingQueue<>(sws);
         try {
             this.socket = new DatagramSocket(this.port);
+            this.socket.setSoTimeout(5_000);
         } catch(SocketException e) {
             e.printStackTrace();
         }
@@ -23,13 +25,24 @@ public class Receiver extends TCPSocket {
 
     @Override
     public void connect() {
-        // rcv SYN
-        TCPPacket tcp = this.receiveSyn();
-        // snd SYN-ACK
-        this.sendSynAck(tcp.timestamp);
-        // rcv ACK
-        this.receiveAck();
-        System.out.println("Connection established");
+        while(true) {
+            switch(this.state) {
+                case LISTEN:
+                    TCPPacket tcp = this.receiveSyn();
+                    if (tcp != null) {
+                        this.sendSynAck(tcp.timestamp);
+                        this.state = TCPState.SYN_RECEIVED;
+                    }
+                    break;
+                case SYN_RECEIVED:
+                    this.receiveAck();
+                    this.state = TCPState.ESTABLISHED;
+                    break;
+                case ESTABLISHED:
+                    System.out.println("Connection established");
+                    return;
+            }
+        }
     }
 
     private void producer() {

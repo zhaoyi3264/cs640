@@ -3,12 +3,16 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public abstract class TCPSocket {
 
+    public static final int MAX_RETRANSMIT = 16;
     protected static final byte[] EMPTY_DATA = {};
+
+    protected TCPState state;
 
     protected int port;
     protected int mtu;
@@ -67,6 +71,9 @@ public abstract class TCPSocket {
 		DatagramPacket p = new DatagramPacket(buf, buf.length);
         try {
             socket.receive(p);
+        } catch(SocketTimeoutException e) {
+            System.out.println("Socket receive timeout");
+            return null;
         } catch(IOException e) {
             e.printStackTrace();
         }
@@ -91,8 +98,8 @@ public abstract class TCPSocket {
 
     protected TCPPacket receiveAck() {
         TCPPacket tcp = this.receive();
-        if (tcp.SYN || !tcp.ACK || tcp.FIN) {
-            throw new IllegalStateException("Did not receive ACK");
+        if (tcp == null || tcp.SYN || !tcp.ACK || tcp.FIN) {
+            System.err.println("Did not receive ACK");
         }
         return tcp;
     }
@@ -106,8 +113,8 @@ public abstract class TCPSocket {
     protected TCPPacket receiveSynAck() {
         this.ack += 1;
         TCPPacket tcp = this.receive();
-        if (!tcp.SYN || !tcp.ACK || tcp.FIN) {
-            throw new IllegalStateException("Did not receive SYN-ACK");
+        if (tcp == null || !tcp.SYN || !tcp.ACK || tcp.FIN) {
+            System.err.println("Did not receive SYN-ACK");
         }
         return tcp;
     }
@@ -121,7 +128,7 @@ public abstract class TCPSocket {
         this.ack += 1;
         TCPPacket tcp = this.receive();
         if (tcp.SYN || !tcp.ACK || !tcp.FIN) {
-            throw new IllegalStateException("Did not receive ACK-FIN");
+            System.err.println("Did not receive ACK-FIN");
         }
         return tcp;
     }
@@ -130,11 +137,12 @@ public abstract class TCPSocket {
     protected TCPPacket receiveSyn() {
         this.ack += 1;
         TCPPacket tcp = this.receive();
-        if (!tcp.SYN || tcp.ACK || tcp.FIN) {
-            throw new IllegalStateException("Did not receive SYN");
+        if (tcp == null || !tcp.SYN || tcp.ACK || tcp.FIN) {
+            System.err.println("Did not receive SYN");
+        } else {
+            this.remoteAddress = tcp.remoteAddress;
+            this.remotePort = tcp.remotePort;
         }
-        this.remoteAddress = tcp.remoteAddress;
-        this.remotePort = tcp.remotePort;
         return tcp;
     }
 

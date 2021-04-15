@@ -1,0 +1,3 @@
+public enum TCPState {
+    CLOSED, LISTEN, SYN_SENT, SYN_RECEIVED, ESTABLISHED;
+}
