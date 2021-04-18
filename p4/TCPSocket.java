@@ -73,7 +73,8 @@ public abstract class TCPSocket {
         try {
             socket.receive(p);
         } catch(PortUnreachableException e) {
-            return null;
+            System.out.println("Port unreachable");
+            System.exit(1);
         } catch(SocketTimeoutException e) {
             System.out.println("Socket receive timeout");
             return null;

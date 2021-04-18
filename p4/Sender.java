@@ -13,6 +13,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 // active
 public class Sender extends TCPSocket {
 
+    private int retrans;
+
     private Timer timer;
     private LinkedBlockingQueue<BufferEntry> buffer;
     private Timeout timeout;
@@ -20,13 +22,14 @@ public class Sender extends TCPSocket {
 
     public Sender(int port, int mtu, int sws, String file, InetAddress remoteAddress, int remotePort) {
         super(port, mtu, sws, file);
+        this.retrans = 0;
         this.state = TCPState.CLOSED;
         this.remoteAddress = remoteAddress;
         this.remotePort = remotePort;
 
         this.timer = new Timer(true);
         this.buffer = new LinkedBlockingQueue<>(sws);
-        this.timeout = new Timeout(TCPSocket.DEFAULT_TIMEOUT * 1_000_000);
+        this.timeout = new Timeout(TCPSocket.DEFAULT_TIMEOUT * 1_000_000L);
 
         try {
             this.socket = new DatagramSocket(port);
@@ -43,17 +46,20 @@ public class Sender extends TCPSocket {
         // System.out.println("Sender sending to port " + this.remotePort);
     }
 
+    private void checkRetrans() {
+        if(this.retrans > TCPSocket.MAX_RETRANSMIT) {
+            System.err.println("Max retransmit time exceeded");
+            System.exit(1);
+        }
+        this.retrans += 1;
+    }
+
     @Override
     public void connect() {
-        int retrans = 0;
         while(true) {
             switch(this.state) {
                 case CLOSED:
-                    if(retrans > TCPSocket.MAX_RETRANSMIT) {
-                        System.err.println("Max retransmit time exceeded");
-                        System.exit(1);
-                    }
-                    retrans += 1;
+                    checkRetrans();
                     this.sendSyn();
                     this.state = TCPState.SYN_SENT;
                     break;
@@ -71,20 +77,21 @@ public class Sender extends TCPSocket {
                     }
                     break;
                 case ESTABLISHED:
+                    this.retrans = 0;
                     System.out.println("Connection established");
                     return;
             }
         }
     }
 
-    private TimerTask schedRetrans(int seq, byte[] data) {
-        TimerTask retrans = new TimerTask() {
+    private TimerTask createTask(int seq, byte[] data) {
+        TimerTask task = new TimerTask() {
             int retransTime = 0;
             @Override
             public void run() {
                 if(retransTime > TCPSocket.MAX_RETRANSMIT) {
                     this.cancel();
-                    System.err.println("Retransmission failed");
+                    System.err.println("Retransmit failed");
                     System.exit(1);
                 } else {
                     System.err.println("Retransmit " + seq);
@@ -93,9 +100,7 @@ public class Sender extends TCPSocket {
                 }
             }
         };
-        long delay = this.timeout.getTo() / 1_000_000;
-        // this.timer.scheduleAtFixedRate(retrans, delay, delay);
-        return retrans;
+        return task;
     }
 
     protected void resend(int seq, byte[] data) {
@@ -123,7 +128,6 @@ public class Sender extends TCPSocket {
     }
 
     private void producer() {
-        int retrans = 0;
         while (true) {
             switch(this.state) {
                 case ESTABLISHED:
@@ -131,31 +135,34 @@ public class Sender extends TCPSocket {
                     byte[] data = this.readData();
                     if(data == null) {
                         if(this.buffer.size() == 0) {
-                            if(retrans > TCPSocket.MAX_RETRANSMIT) {
-                                System.err.println("Max retransmit time exceeded");
-                                System.exit(1);
-                            }
-                            retrans += 1;
+                            checkRetrans();
                             this.sendFin();
                             this.state = TCPState.FIN_WAIT;
                         }
                     } else {
+                        TimerTask task = this.createTask(this.seq - data.length, data);
+                        BufferEntry be = new BufferEntry(this.seq, data, task);
                         try {
-                            this.buffer.put(new BufferEntry(this.seq, data,
-                                this.schedRetrans(this.seq, data)));
+                            this.buffer.put(be);
                         } catch(Exception e) {
                             e.printStackTrace();
                         }
+                        // if(this.seq == 9) {
+                        //     this.seq += this.mtu;
+                        //     continue;
+                        // }
                         this.send(-1, false, false, false, data);
+                        long delay = this.timeout.getTo() / 1_000_000;
+                        try {
+                            this.timer.scheduleAtFixedRate(task, delay, delay);
+                        } catch(Exception e) {
+                            
+                        }
                     }
                     break;
                 case FIN_WAIT:
                     // System.out.println("FIN_WAIT");
-                    if(retrans > TCPSocket.MAX_RETRANSMIT) {
-                        System.err.println("Max retransmit time exceeded");
-                        System.exit(1);
-                    }
-                    retrans += 1;
+                    checkRetrans();
                     TCPPacket tcp = this.receiveAckFin();
                     if(tcp != null) {
                         this.sendAck(-1);
@@ -207,7 +214,7 @@ public class Sender extends TCPSocket {
                             try {
                                 do {
                                     be = this.buffer.take();
-                                    be.retrans.cancel();
+                                    be.task.cancel();
                                     // System.out.println("Remove " + be.seq);
                                 } while ((be.seq + be.data.length) < tcp.ack - 1 && this.buffer.size() > 0);
                             } catch(Exception e) {
@@ -245,11 +252,11 @@ public class Sender extends TCPSocket {
 class BufferEntry {
     int seq;
     byte[] data;
-    TimerTask retrans;
+    TimerTask task;
 
-    public BufferEntry(int seq, byte[] data, TimerTask retrans) {
+    public BufferEntry(int seq, byte[] data, TimerTask task) {
         this.seq = seq;
         this.data = data;
-        this.retrans = retrans;
+        this.task = task;
     }
 }

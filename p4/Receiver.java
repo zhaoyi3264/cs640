@@ -38,6 +38,11 @@ public class Receiver extends TCPSocket {
             switch(this.state) {
                 case LISTEN:
                     TCPPacket tcp = this.receiveSyn();
+                    try {
+                        Thread.sleep(1000);
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
                     if(tcp != null) {
                         this.sendSynAck(tcp.timestamp);
                         this.state = TCPState.SYN_RECEIVED;
@@ -51,11 +56,6 @@ public class Receiver extends TCPSocket {
                     System.out.println("Connection established");
                     return;
             }
-            try {
-                Thread.sleep(1000);
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -64,6 +64,9 @@ public class Receiver extends TCPSocket {
             switch(this.state) {
                 case ESTABLISHED:
                     TCPPacket tcp = this.receive();
+                    if (tcp == null) {
+                        continue;
+                    }
                     if(tcp.seq == (this.ack - tcp.data.length)) {
                         try {
                             this.buffer.put(tcp);
@@ -77,6 +80,11 @@ public class Receiver extends TCPSocket {
                     if(tcp.FIN) {
                         return;
                     }
+                    // try {
+                    //     Thread.sleep(1000);
+                    // } catch(Exception e) {
+                    //     e.printStackTrace();
+                    // }
                     this.sendAck(tcp.timestamp);
                     break;
                 case CLOSE_WAIT:
@@ -84,11 +92,6 @@ public class Receiver extends TCPSocket {
                     break;
                 case CLOSED:
                     return;
-            }
-            try {
-                Thread.sleep(1000);
-            } catch(Exception e) {
-                e.printStackTrace();
             }
         }
     }

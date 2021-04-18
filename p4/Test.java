@@ -8,12 +8,19 @@ public class Test {
     public static LinkedBlockingQueue<Integer> buffer = new LinkedBlockingQueue<>(10);
 
     public static void main(String[] args) {
-        Timeout timeout = new Timeout(5_000_000_000L);
-        for(int i = 0; i < 10; i++) {
-            timeout.update(i, System.nanoTime());
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("Run");
+            }
+        };
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(task, 5000, 5000);
+        try {
+            Thread.sleep(12500);
+        } catch(Exception e){
+            e.printStackTrace();
         }
-        System.out.println(timeout.getTo());
-        System.out.println(timeout.getErtt());
-        System.out.println(timeout.getEdev());
+        task.cancel();
     }
 }
