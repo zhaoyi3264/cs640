@@ -46,8 +46,8 @@ public class Sender extends TCPSocket {
                         System.err.println("Max retransmit time exceeded");
                         System.exit(1);
                     }
-                    this.sendSyn();
                     retrans += 1;
+                    this.sendSyn();
                     this.state = TCPState.SYN_SENT;
                     break;
                 case SYN_SENT:
@@ -99,7 +99,7 @@ public class Sender extends TCPSocket {
     }
 
     private void producer() {
-        // TODO: retransmit, revert seq and ack
+        int retrans = 0;
         while (true) {
             switch(this.state) {
                 case ESTABLISHED:
@@ -107,6 +107,11 @@ public class Sender extends TCPSocket {
                     byte[] data = this.readData();
                     if(data == null) {
                         if(this.buffer.size() == 0) {
+                            if(retrans > TCPSocket.MAX_RETRANSMIT) {
+                                System.err.println("Max retransmit time exceeded");
+                                System.exit(1);
+                            }
+                            retrans += 1;
                             this.sendFin();
                             this.state = TCPState.FIN_WAIT;
                         }
@@ -121,11 +126,18 @@ public class Sender extends TCPSocket {
                     break;
                 case FIN_WAIT:
                     System.out.println("FIN_WAIT");
+                    if(retrans > TCPSocket.MAX_RETRANSMIT) {
+                        System.err.println("Max retransmit time exceeded");
+                        System.exit(1);
+                    }
+                    retrans += 1;
                     TCPPacket tcp = this.receiveAckFin();
                     if(tcp != null) {
                         this.sendAck(-1);
                         this.state = TCPState.TIME_WAIT;
                     } else {
+                        this.seq -= 1;
+                        this.ack -= 1;
                         this.state = TCPState.ESTABLISHED;
                     }
                     break;

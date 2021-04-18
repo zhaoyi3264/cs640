@@ -61,21 +61,24 @@ public class Receiver extends TCPSocket {
                         }
                         if(tcp.FIN) {
                             return;
+                        } else {
+                            this.sendAck(tcp.timestamp);
                         }
-                        this.sendAck(tcp.timestamp);
                     } catch(Exception e) {
                         e.printStackTrace();
                     }
                     break;
                 case CLOSE_WAIT:
                 case LAST_ACK:
+                    break;
+                case CLOSED:
                     return;
             }
         }
     }
 
     private void consumer() {
-        // TODO: retransmit, revert seq and ack
+        int retrans = 0;
         while(true) {
             switch(this.state) {
                 case ESTABLISHED:
@@ -93,16 +96,28 @@ public class Receiver extends TCPSocket {
                     break;
                 case CLOSE_WAIT:
                     System.out.println("CLOSE_WAIT");
+                    if(retrans > TCPSocket.MAX_RETRANSMIT) {
+                        System.err.println("Max retransmit time exceeded");
+                        System.exit(1);
+                    }
+                    retrans += 1;
                     this.sendAckFin();
                     this.state = TCPState.LAST_ACK;
                     break;
                 case LAST_ACK:
                     System.out.println("LAST_ACK");
+                    if(retrans > TCPSocket.MAX_RETRANSMIT) {
+                        System.err.println("Max retransmit time exceeded");
+                        System.exit(1);
+                    }
+                    retrans += 1;
                     TCPPacket tcp = this.receiveAck();
-                    if(tcp != null) {
+                    if(tcp != null && tcp.ACK) {
                         this.state = TCPState.CLOSED;
                     } else {
-                        this.state = TCPState.CLOSE_WAIT;
+                        this.seq -= 1;
+                        this.ack -= 1;
+                        this.state = TCPState.LAST_ACK;
                     }
                     break;
                 case CLOSED:
