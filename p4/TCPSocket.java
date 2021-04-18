@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.PortUnreachableException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -71,6 +72,8 @@ public abstract class TCPSocket {
 		DatagramPacket p = new DatagramPacket(buf, buf.length);
         try {
             socket.receive(p);
+        } catch(PortUnreachableException e) {
+            return null;
         } catch(SocketTimeoutException e) {
             System.out.println("Socket receive timeout");
             return null;

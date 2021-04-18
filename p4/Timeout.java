@@ -20,7 +20,7 @@ public class Timeout {
             this.to = 2 * ertt;
         } else {
             long srtt = System.nanoTime() - timestamp;
-            long sdev = Math.abs(srtt - ertt);
+            long sdev = Math.abs(srtt - this.ertt);
             this.ertt = (long)(A * this.ertt + (1 - A) * srtt);
             this.edev = (long)(B * this.edev + (1 - B) * sdev);
             this.to = this.ertt + 4 * this.edev;

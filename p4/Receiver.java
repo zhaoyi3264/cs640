@@ -1,3 +1,5 @@
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -9,6 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Receiver extends TCPSocket {
 
     private LinkedBlockingQueue<TCPPacket> buffer;
+    private FileOutputStream output;
 
     public Receiver(int port, int mtu, int sws, String file) {
         super(port, mtu, sws, file);
@@ -19,8 +22,12 @@ public class Receiver extends TCPSocket {
         try {
             this.socket = new DatagramSocket(this.port);
             this.socket.setSoTimeout(TCPSocket.DEFAULT_TIMEOUT);
+            this.output = new FileOutputStream(this.file);
         } catch(SocketException e) {
             e.printStackTrace();
+        } catch(IOException e){
+            System.err.println("Cannot write file " + this.file);
+            System.exit(1);
         }
         System.out.println("Receiver listening on port " + this.port);
     }
@@ -44,6 +51,11 @@ public class Receiver extends TCPSocket {
                     System.out.println("Connection established");
                     return;
             }
+            try {
+                Thread.sleep(1000);
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -51,28 +63,32 @@ public class Receiver extends TCPSocket {
         while(true) {
             switch(this.state) {
                 case ESTABLISHED:
-                    try {
-                        TCPPacket tcp = this.receive();
-                        if(tcp.seq == (this.ack - tcp.data.length)) {
+                    TCPPacket tcp = this.receive();
+                    if(tcp.seq == (this.ack - tcp.data.length)) {
+                        try {
                             this.buffer.put(tcp);
-                        } else {
-                            this.ack -= tcp.data.length;
-                            System.out.println("Incorrect seq");
+                        } catch(Exception e) {
+                            e.printStackTrace();
                         }
-                        if(tcp.FIN) {
-                            return;
-                        } else {
-                            this.sendAck(tcp.timestamp);
-                        }
-                    } catch(Exception e) {
-                        e.printStackTrace();
+                    } else {
+                        this.ack -= tcp.data.length;
+                        System.out.println("Incorrect seq " + tcp.seq);
                     }
+                    if(tcp.FIN) {
+                        return;
+                    }
+                    this.sendAck(tcp.timestamp);
                     break;
                 case CLOSE_WAIT:
                 case LAST_ACK:
                     break;
                 case CLOSED:
                     return;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch(Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -82,20 +98,25 @@ public class Receiver extends TCPSocket {
         while(true) {
             switch(this.state) {
                 case ESTABLISHED:
-                    System.out.println("ESTABLISHED");
+                    // System.out.println("ESTABLISHED");
                     try {
                         TCPPacket tcp = this.buffer.take();
                         if(tcp.FIN) {
                             this.state = TCPState.CLOSE_WAIT;
+                            this.output.close();
                         } else {
-                            System.out.println("Write data " + Arrays.toString(tcp.data));
+                            // System.out.println("Write data " + Arrays.toString(tcp.data));
+                            this.output.write(tcp.data);
                         }
+                    } catch(IOException e){
+                        System.out.println("Cannot write file " + this.file);
+                        System.exit(1);
                     } catch(Exception e) {
                         e.printStackTrace();
                     }
                     break;
                 case CLOSE_WAIT:
-                    System.out.println("CLOSE_WAIT");
+                    // System.out.println("CLOSE_WAIT");
                     if(retrans > TCPSocket.MAX_RETRANSMIT) {
                         System.err.println("Max retransmit time exceeded");
                         System.exit(1);
@@ -105,7 +126,7 @@ public class Receiver extends TCPSocket {
                     this.state = TCPState.LAST_ACK;
                     break;
                 case LAST_ACK:
-                    System.out.println("LAST_ACK");
+                    // System.out.println("LAST_ACK");
                     if(retrans > TCPSocket.MAX_RETRANSMIT) {
                         System.err.println("Max retransmit time exceeded");
                         System.exit(1);
