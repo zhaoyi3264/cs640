@@ -215,7 +215,7 @@ public class Sender extends TCPSocket {
                                 do {
                                     be = this.buffer.take();
                                     be.task.cancel();
-                                    // System.out.println("Remove " + be.seq);
+                                    System.out.println("Remove " + be.seq);
                                 } while ((be.seq + be.data.length) < tcp.ack - 1 && this.buffer.size() > 0);
                             } catch(Exception e) {
                                 e.printStackTrace();

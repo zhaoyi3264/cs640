@@ -1,26 +1,17 @@
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 public class Test {
 
-    public static LinkedBlockingQueue<Integer> buffer = new LinkedBlockingQueue<>(10);
-
     public static void main(String[] args) {
-        TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                System.out.println("Run");
-            }
-        };
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate(task, 5000, 5000);
-        try {
-            Thread.sleep(12500);
-        } catch(Exception e){
-            e.printStackTrace();
-        }
-        task.cancel();
+        int i1 = Integer.parseInt​("10000110010111101010110001100000", 2);
+        int i2 = Integer.parseInt​("01110001001010101000000110110101", 2);
+        ByteBuffer bb = ByteBuffer.allocate(16);
+        bb.putInt(i1);
+        bb.putInt(i2);
+        
     }
 }

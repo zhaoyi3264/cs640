@@ -38,14 +38,16 @@ public class Receiver extends TCPSocket {
             switch(this.state) {
                 case LISTEN:
                     TCPPacket tcp = this.receiveSyn();
-                    try {
-                        Thread.sleep(1000);
-                    } catch(Exception e) {
-                        e.printStackTrace();
-                    }
+                    // try {
+                    //     Thread.sleep(1000);
+                    // } catch(Exception e) {
+                    //     e.printStackTrace();
+                    // }
                     if(tcp != null) {
                         this.sendSynAck(tcp.timestamp);
                         this.state = TCPState.SYN_RECEIVED;
+                    } else {
+                        this.ack -= 1;
                     }
                     break;
                 case SYN_RECEIVED:
@@ -141,7 +143,7 @@ public class Receiver extends TCPSocket {
                     } else {
                         this.seq -= 1;
                         this.ack -= 1;
-                        this.state = TCPState.LAST_ACK;
+                        this.state = TCPState.CLOSE_WAIT;
                     }
                     break;
                 case CLOSED:
