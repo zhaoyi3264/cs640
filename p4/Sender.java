@@ -152,7 +152,7 @@ public class Sender extends TCPSocket {
                         //     continue;
                         // }
                         this.send(-1, false, false, false, data);
-                        long delay = this.timeout.getTo() / 1_000_000;
+                        long delay = this.timeout.getTo() / 1_000_000 * 2;
                         try {
                             this.timer.scheduleAtFixedRate(task, delay, delay);
                         } catch(Exception e) {

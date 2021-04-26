@@ -9,7 +9,7 @@
     </target>
 
     <target name="dist" depends="compile">
-        <jar de${ant.project.name}.jar">
+        <jar destfile="${ant.project.name}.jar">
             <manifest>
                 <attribute name="Main-Class" 
                     value="edu.wisc.cs.sdn.vnet.Main" />
@@ -19,7 +19,8 @@
         </jar>
     </target>
 	
-    <target name="clname="clean">
+    <target name="clean">
         <delete dir="bin/" />
         <delete file="${ant.project.name}.jar" />
-    </targ
+    </target>    
+</project>
